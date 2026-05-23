@@ -1,50 +1,55 @@
-# Yuxi Flash Studio for macOS
+# Yu 工具箱
 
 中文 | [English](#english)
+
+面向 macOS 的 Android 设备工具箱，聚焦常用刷机与调试流程，提供统一、开箱即用的桌面体验。
+
+> 当前覆盖能力：**ADB / Fastboot / Qualcomm EDL (9008 入口)**
+
+![Yu 工具箱 App Icon](Sources/AndroidToolbox/Resources/app-icon.png)
 
 ---
 
 ## 中文
 
-Yuxi Flash Studio 是一个面向 macOS 的安卓工具箱，集成 **ADB / Fastboot / Qualcomm EDL(9008)** 常用流程，目标是开箱即用。
+### 项目简介
 
-### 功能特性（当前）
+**Yu 工具箱** 是一个用于 macOS 的 Android 设备管理与调试工具，围绕高频操作进行整合，降低命令行门槛，提升日常效率。
 
-- ADB 一站式功能：设备管理、重启矩阵、文件管理、应用管理（安装/卸载）
-- ADB 投屏：集成 `scrcpy`，支持分辨率/码率/FPS、全屏、置顶、禁音、只读控制等参数
-- Fastboot 设备检测与基础控制
-- Qualcomm EDL(9008) 入口（当前版本点击提示“开发中”，暂不开放）
-- macOS 液态玻璃风格界面与统一日志面板
+### 核心功能
 
-### scrcpy 依赖
+- **ADB 一站式操作**：设备管理、重启矩阵、文件浏览与传输、应用安装与卸载
+- **ADB 投屏**：内置 `scrcpy`，支持分辨率、码率、FPS、全屏、置顶、静音、只读控制等参数
+- **Fastboot 基础能力**：设备检测与常用控制命令
+- **EDL (9008) 模式入口**：界面入口已预留（当前版本显示开发中）
+- **统一日志视图**：集中展示运行过程与执行输出，便于排查问题
 
-ADB 投屏已内置 `scrcpy`（包含 `scrcpy` 与 `scrcpy-server`），开箱可用。
+### 平台与依赖
 
-如需使用系统版本作为兜底，也可手动安装：
+- macOS 15+
+- Swift 6.2+
+- `scrcpy` 已内置（包含 `scrcpy` 与 `scrcpy-server`）
+
+可选：如需系统兜底版本，可手动安装。
 
 ```bash
 brew install scrcpy
 ```
 
-### 运行环境
-
-- macOS 15+
-- Swift 6.2+
-
-### 本地运行
+### 快速开始
 
 ```bash
 swift build
 swift run AndroidToolbox
 ```
 
-### 测试
+### 运行测试
 
 ```bash
 swift test
 ```
 
-### 开源协议
+### 许可证
 
 本项目使用 **Apache-2.0** 协议，详见 `LICENSE`。
 
@@ -52,32 +57,31 @@ swift test
 
 ## English
 
-Yuxi Flash Studio is a macOS Android toolbox that integrates common **ADB / Fastboot / Qualcomm EDL (9008)** workflows with an out-of-the-box experience.
+### Overview
 
-### Features (Current)
+**Yu Toolbox** is a macOS toolbox for Android device management and debugging workflows. It consolidates common operations into a single desktop app to reduce command-line overhead and improve daily productivity.
 
-- ADB all-in-one tools: device management, reboot matrix, file manager, app manager (install/uninstall)
-- ADB screen mirroring via `scrcpy`, with configurable resolution/bitrate/FPS, fullscreen, always-on-top, no-audio, and read-only control
-- Fastboot device detection and basic controls
-- Qualcomm EDL (9008) entry is currently gated and marked as "in development"
-- Liquid-glass styled macOS UI with unified runtime log panel
+### Key Features
 
-### scrcpy dependency
+- **ADB all-in-one workflows**: device management, reboot matrix, file browsing/transfer, app install/uninstall
+- **ADB screen mirroring**: bundled `scrcpy` with configurable resolution, bitrate, FPS, fullscreen, always-on-top, mute, and read-only control
+- **Fastboot essentials**: device detection and common control commands
+- **EDL (9008) entry**: reserved in UI (currently marked as in development)
+- **Unified runtime logs**: centralized output for easier troubleshooting
 
-ADB screen mirroring now bundles `scrcpy` (`scrcpy` + `scrcpy-server`) inside the app resources out of the box.
+### Platform & Dependencies
 
-You may still install a system fallback version if needed:
+- macOS 15+
+- Swift 6.2+
+- Bundled `scrcpy` (`scrcpy` + `scrcpy-server`)
+
+Optional system fallback:
 
 ```bash
 brew install scrcpy
 ```
 
-### Requirements
-
-- macOS 15+
-- Swift 6.2+
-
-### Run locally
+### Quick Start
 
 ```bash
 swift build
@@ -92,4 +96,4 @@ swift test
 
 ### License
 
-This project is licensed under **Apache-2.0**. See `LICENSE` for details.
+Licensed under **Apache-2.0**. See `LICENSE` for details.
