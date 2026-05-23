@@ -1,0 +1,137 @@
+import Foundation
+import Observation
+
+struct FastbootRebootAction: Identifiable {
+    let id = UUID()
+    let title: String
+    let subtitle: String
+    let target: FastbootRebootTarget
+}
+
+@Observable
+@MainActor
+final class FastbootViewModel {
+    var devices: [DeviceInfo] = []
+    var selectedDevice: DeviceInfo = .disconnected
+    var varKey: String = "product"
+    var logs: String = ""
+    var isAutoRefreshing: Bool = false
+    var isBusy: Bool = false
+
+    let rebootActions: [FastbootRebootAction] = [
+        .init(title: "重启系统", subtitle: "fastboot reboot", target: .system),
+        .init(title: "重启 Bootloader", subtitle: "fastboot reboot-bootloader", target: .bootloader),
+        .init(title: "重启 Fastbootd", subtitle: "fastboot reboot fastboot", target: .fastbootd),
+        .init(title: "重启 Recovery", subtitle: "fastboot reboot recovery", target: .recovery)
+    ]
+
+    var canExecuteCommand: Bool {
+        selectedDevice.serial != "-" && selectedDevice.state == "fastboot"
+    }
+
+    private let service: FastbootService
+    private var refreshTimer: Timer?
+    private let appLogStore: AppLogStore
+
+    init(service: FastbootService = FastbootService(), appLogStore: AppLogStore = AppLogStore()) {
+        self.service = service
+        self.appLogStore = appLogStore
+    }
+
+    func refreshDevices() {
+        Task { await refreshDevices(showLog: true) }
+    }
+
+    func startAutoRefresh() {
+        guard refreshTimer == nil else { return }
+
+        let timer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.refreshDevices(showLog: false)
+            }
+        }
+        timer.tolerance = 0.2
+        refreshTimer = timer
+        isAutoRefreshing = true
+
+        Task { await refreshDevices(showLog: false) }
+    }
+
+    func stopAutoRefresh() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+        isAutoRefreshing = false
+    }
+
+    func selectDevice(_ device: DeviceInfo) {
+        selectedDevice = device
+        service.selectedSerial = device.serial == "-" ? nil : device.serial
+        appendLog("[设备] 已切换：\(device.serial)（\(device.model)）")
+    }
+
+    func readVar() {
+        guard !varKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard ensureDeviceReady() else { return }
+
+        Task {
+            isBusy = true
+            defer { isBusy = false }
+            do {
+                let result = try service.getVar(varKey)
+                appendLog("[getvar] \(varKey)\n\(result)")
+            } catch {
+                appendLog("[getvar] 失败：\(error.localizedDescription)")
+            }
+        }
+    }
+
+    func reboot(to target: FastbootRebootTarget, label: String) {
+        guard ensureDeviceReady() else { return }
+
+        Task {
+            isBusy = true
+            defer { isBusy = false }
+            do {
+                let result = try service.reboot(target)
+                appendLog("[重启] \(label)\n\(result)")
+            } catch {
+                appendLog("[重启] \(label) 失败：\(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func ensureDeviceReady() -> Bool {
+        guard canExecuteCommand else {
+            appendLog("[Fastboot] 失败：请先连接并选择一台 fastboot 设备")
+            return false
+        }
+        return true
+    }
+
+    private func refreshDevices(showLog: Bool) async {
+        do {
+            let list = try service.listDevices()
+            devices = list
+
+            if let matched = list.first(where: { $0.serial == selectedDevice.serial }) {
+                selectedDevice = matched
+            } else {
+                selectedDevice = list.first ?? .disconnected
+            }
+            service.selectedSerial = selectedDevice.serial == "-" ? nil : selectedDevice.serial
+
+            if showLog {
+                appendLog("[fastboot devices] 刷新完成：共 \(list.count) 台")
+            }
+        } catch {
+            if showLog {
+                appendLog("[fastboot devices] 刷新失败：\(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func appendLog(_ entry: String) {
+        logs = logs.isEmpty ? entry : logs + "\n\n" + entry
+        appLogStore.append(source: "Fastboot", message: entry)
+    }
+}

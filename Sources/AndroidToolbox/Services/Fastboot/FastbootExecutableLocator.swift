@@ -1,0 +1,33 @@
+import Foundation
+
+enum FastbootExecutableLocator {
+    static func locate() -> URL? {
+        if let bundled = Bundle.module.url(forResource: "fastboot", withExtension: nil, subdirectory: "Tools") {
+            return bundled
+        }
+
+        let fileManager = FileManager.default
+        let fallbackCandidates = [
+            "/usr/bin/fastboot",
+            "/usr/local/bin/fastboot",
+            "/opt/homebrew/bin/fastboot"
+        ]
+
+        for candidate in fallbackCandidates {
+            if fileManager.isExecutableFile(atPath: candidate) {
+                return URL(fileURLWithPath: candidate)
+            }
+        }
+
+        if let pathValue = ProcessInfo.processInfo.environment["PATH"] {
+            for directory in pathValue.split(separator: ":").map(String.init) {
+                let candidate = URL(fileURLWithPath: directory).appendingPathComponent("fastboot").path
+                if fileManager.isExecutableFile(atPath: candidate) {
+                    return URL(fileURLWithPath: candidate)
+                }
+            }
+        }
+
+        return nil
+    }
+}
