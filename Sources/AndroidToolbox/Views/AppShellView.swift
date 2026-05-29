@@ -1,9 +1,11 @@
 import SwiftUI
 
 struct AppShellView: View {
-    private let modeTransitionAnimation = Animation.spring(response: 0.28, dampingFraction: 0.86)
+    private let panelFadeAnimation = Animation.easeInOut(duration: 0.22)
+    private let contentFadeAnimation = Animation.easeOut(duration: 0.22).delay(0.16)
 
     @State private var mode: ToolboxMode = .adb
+    @State private var contentFadeKey = UUID()
     @State private var appLogStore = AppLogStore()
     @State private var adbViewModel: ADBViewModel
     @State private var fastbootViewModel: FastbootViewModel
@@ -43,7 +45,8 @@ struct AppShellView: View {
                         mainPanel
                             .frame(maxHeight: .infinity)
                             .layoutPriority(1)
-                            .animation(modeTransitionAnimation, value: mode)
+                            .animation(panelFadeAnimation, value: mode)
+                            .animation(contentFadeAnimation, value: contentFadeKey)
 
                         GlobalLogConsoleView(logStore: appLogStore)
                             .frame(height: 176)
@@ -78,6 +81,9 @@ struct AppShellView: View {
         } message: {
             Text("9008 / EDL 功能暂未开放，当前版本不会进入该模块。")
         }
+        .onChange(of: mode) { _, _ in
+            contentFadeKey = UUID()
+        }
     }
 
     @ViewBuilder
@@ -85,13 +91,16 @@ struct AppShellView: View {
         switch mode {
         case .adb:
             ADBPanelView(viewModel: adbViewModel)
-                .transition(panelTransition(edge: .leading))
+                .transition(.opacity)
+                .id(contentFadeKey)
         case .fastboot:
             FastbootPanelView(viewModel: fastbootViewModel)
-                .transition(panelTransition(edge: .trailing))
+                .transition(.opacity)
+                .id(contentFadeKey)
         case .edl:
             EDLPanelView(viewModel: edlViewModel)
-                .transition(panelTransition(edge: .trailing))
+                .transition(.opacity)
+                .id(contentFadeKey)
         }
     }
 
@@ -101,10 +110,12 @@ struct AppShellView: View {
 
             if mode == .adb {
                 adbDeviceManagementCard
-                    .transition(sidebarCardTransition)
+                    .transition(.opacity)
+                    .id(contentFadeKey)
             } else if mode == .fastboot {
                 fastbootDeviceManagementCard
-                    .transition(sidebarCardTransition)
+                    .transition(.opacity)
+                    .id(contentFadeKey)
             }
 
             ModeSidebarView(mode: $mode) { _ in
@@ -112,23 +123,7 @@ struct AppShellView: View {
             }
             Spacer()
         }
-        .animation(modeTransitionAnimation, value: mode)
-    }
-
-    private func panelTransition(edge: Edge) -> AnyTransition {
-        .asymmetric(
-            insertion: .opacity
-                .combined(with: .move(edge: edge))
-                .combined(with: .scale(scale: 0.985, anchor: .center)),
-            removal: .opacity
-                .combined(with: .scale(scale: 0.992, anchor: .center))
-        )
-    }
-
-    private var sidebarCardTransition: AnyTransition {
-        .opacity
-            .combined(with: .move(edge: .top))
-            .combined(with: .scale(scale: 0.98, anchor: .top))
+        .animation(contentFadeAnimation, value: contentFadeKey)
     }
 
     private var adbDeviceManagementCard: some View {
