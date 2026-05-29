@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ModeSidebarView: View {
+    private let selectionAnimation = Animation.spring(response: 0.26, dampingFraction: 0.82)
+
     @Binding var mode: ToolboxMode
     var onUnavailableModeTap: ((ToolboxMode) -> Void)?
 
@@ -50,7 +52,10 @@ struct ModeSidebarView: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(mode == targetMode ? LiquidGlassTheme.stroke : LiquidGlassTheme.secondaryStroke, lineWidth: 1)
             }
+            .scaleEffect(mode == targetMode ? 1.015 : 1.0)
+            .shadow(color: mode == targetMode ? Color.white.opacity(0.12) : Color.clear, radius: 10, y: 3)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .animation(selectionAnimation, value: mode)
         }
         .buttonStyle(AnimatedGlassButtonStyle())
     }

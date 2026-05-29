@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AppShellView: View {
+    private let modeTransitionAnimation = Animation.spring(response: 0.28, dampingFraction: 0.86)
+
     @State private var mode: ToolboxMode = .adb
     @State private var appLogStore = AppLogStore()
     @State private var adbViewModel: ADBViewModel
@@ -41,6 +43,7 @@ struct AppShellView: View {
                         mainPanel
                             .frame(maxHeight: .infinity)
                             .layoutPriority(1)
+                            .animation(modeTransitionAnimation, value: mode)
 
                         GlobalLogConsoleView(logStore: appLogStore)
                             .frame(height: 176)
@@ -82,10 +85,13 @@ struct AppShellView: View {
         switch mode {
         case .adb:
             ADBPanelView(viewModel: adbViewModel)
+                .transition(panelTransition(edge: .leading))
         case .fastboot:
             FastbootPanelView(viewModel: fastbootViewModel)
+                .transition(panelTransition(edge: .trailing))
         case .edl:
             EDLPanelView(viewModel: edlViewModel)
+                .transition(panelTransition(edge: .trailing))
         }
     }
 
@@ -95,8 +101,10 @@ struct AppShellView: View {
 
             if mode == .adb {
                 adbDeviceManagementCard
+                    .transition(sidebarCardTransition)
             } else if mode == .fastboot {
                 fastbootDeviceManagementCard
+                    .transition(sidebarCardTransition)
             }
 
             ModeSidebarView(mode: $mode) { _ in
@@ -104,6 +112,23 @@ struct AppShellView: View {
             }
             Spacer()
         }
+        .animation(modeTransitionAnimation, value: mode)
+    }
+
+    private func panelTransition(edge: Edge) -> AnyTransition {
+        .asymmetric(
+            insertion: .opacity
+                .combined(with: .move(edge: edge))
+                .combined(with: .scale(scale: 0.985, anchor: .center)),
+            removal: .opacity
+                .combined(with: .scale(scale: 0.992, anchor: .center))
+        )
+    }
+
+    private var sidebarCardTransition: AnyTransition {
+        .opacity
+            .combined(with: .move(edge: .top))
+            .combined(with: .scale(scale: 0.98, anchor: .top))
     }
 
     private var adbDeviceManagementCard: some View {
