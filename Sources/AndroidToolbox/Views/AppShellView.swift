@@ -6,6 +6,7 @@ struct AppShellView: View {
     @State private var adbViewModel: ADBViewModel
     @State private var fastbootViewModel: FastbootViewModel
     @State private var edlViewModel: EDLViewModel
+    @State private var showUnavailableModeAlert = false
 
     init() {
         let logStore = AppLogStore()
@@ -69,6 +70,11 @@ struct AppShellView: View {
         }
         .frame(width: 1280, height: 860)
         .background(WindowConfigurator())
+        .alert("功能暂未开放", isPresented: $showUnavailableModeAlert) {
+            Button("知道了", role: .cancel) {}
+        } message: {
+            Text("9008 / EDL 功能暂未开放，当前版本不会进入该模块。")
+        }
     }
 
     @ViewBuilder
@@ -93,7 +99,9 @@ struct AppShellView: View {
                 fastbootDeviceManagementCard
             }
 
-            ModeSidebarView(mode: $mode)
+            ModeSidebarView(mode: $mode) { _ in
+                showUnavailableModeAlert = true
+            }
             Spacer()
         }
     }

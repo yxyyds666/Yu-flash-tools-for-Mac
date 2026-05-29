@@ -6,4 +6,13 @@ enum ToolboxMode: String, CaseIterable, Identifiable {
     case edl = "EDL 模式 (9008)"
 
     var id: String { rawValue }
+
+    var isAvailable: Bool {
+        switch self {
+        case .adb, .fastboot:
+            return true
+        case .edl:
+            return false
+        }
+    }
 }

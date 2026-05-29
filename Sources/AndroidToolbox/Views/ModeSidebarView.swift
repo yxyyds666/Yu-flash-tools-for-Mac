@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ModeSidebarView: View {
     @Binding var mode: ToolboxMode
+    var onUnavailableModeTap: ((ToolboxMode) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -31,7 +32,11 @@ struct ModeSidebarView: View {
 
     private func modeButton(title: String, targetMode: ToolboxMode) -> some View {
         Button {
-            mode = targetMode
+            if targetMode.isAvailable {
+                mode = targetMode
+            } else {
+                onUnavailableModeTap?(targetMode)
+            }
         } label: {
             HStack {
                 Text(title)
