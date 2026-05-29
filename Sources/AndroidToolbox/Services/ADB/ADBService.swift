@@ -18,13 +18,11 @@ enum ADBServiceError: Error {
     case commandFailed(String)
 }
 
-typealias ADBExecutableResolver = () -> URL?
+typealias ADBExecutableResolver = @Sendable () -> URL?
 
-final class ADBService: @unchecked Sendable {
+final class ADBService: Sendable {
     private let runner: any ProcessRunning
     private let resolveExecutable: ADBExecutableResolver
-
-    var selectedSerial: String?
 
     init(
         runner: any ProcessRunning = ProcessRunner(),
@@ -39,34 +37,34 @@ final class ADBService: @unchecked Sendable {
         return ADBDeviceList(devices: ADBParser.parseDevices(from: output))
     }
 
-    func runShell(_ command: String) throws -> String {
-        try run(arguments: ["shell", command])
+    func runShell(_ command: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["shell", command], serial: serial)
     }
 
-    func install(apkPath: String) throws -> String {
-        try run(arguments: ["install", apkPath])
+    func install(apkPath: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["install", apkPath], serial: serial)
     }
 
-    func uninstall(packageName: String) throws -> String {
-        try run(arguments: ["uninstall", packageName])
+    func uninstall(packageName: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["uninstall", packageName], serial: serial)
     }
 
-    func listPackages(filter: String?) throws -> String {
+    func listPackages(filter: String?, serial: String? = nil) throws -> String {
         var args = ["shell", "pm", "list", "packages"]
         if let filter, !filter.isEmpty {
             args.append(contentsOf: ["-f", filter])
         }
-        return try run(arguments: args)
+        return try run(arguments: args, serial: serial)
     }
 
-    func listThirdPartyPackages() throws -> [InstalledApp] {
+    func listThirdPartyPackages(serial: String? = nil) throws -> [InstalledApp] {
         let script = """
         pm list packages -3 | sed 's/package://' | while read pkg; do
             label=$(dumpsys package "$pkg" 2>/dev/null | grep 'application-label:' | head -1 | sed "s/.*application-label:'//; s/'//")
             echo "${label:-$pkg}|$pkg"
         done
         """
-        let output = try run(arguments: ["shell", script], timeout: 120)
+        let output = try run(arguments: ["shell", script], timeout: 120, serial: serial)
 
         let apps: [InstalledApp] = output
             .split(separator: "\n")
@@ -83,23 +81,23 @@ final class ADBService: @unchecked Sendable {
         return apps.sorted { $0.appName.localizedCaseInsensitiveCompare($1.appName) == .orderedAscending }
     }
 
-    func grantPermission(packageName: String, permission: String) throws -> String {
-        try run(arguments: ["shell", "pm", "grant", packageName, permission])
+    func grantPermission(packageName: String, permission: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["shell", "pm", "grant", packageName, permission], serial: serial)
     }
 
-    func revokePermission(packageName: String, permission: String) throws -> String {
-        try run(arguments: ["shell", "pm", "revoke", packageName, permission])
+    func revokePermission(packageName: String, permission: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["shell", "pm", "revoke", packageName, permission], serial: serial)
     }
 
-    func pull(remotePath: String, localPath: String) throws -> String {
-        try run(arguments: ["pull", remotePath, localPath])
+    func pull(remotePath: String, localPath: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["pull", remotePath, localPath], serial: serial)
     }
 
-    func push(localPath: String, remotePath: String) throws -> String {
-        try run(arguments: ["push", localPath, remotePath])
+    func push(localPath: String, remotePath: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["push", localPath, remotePath], serial: serial)
     }
 
-    func listRemoteDirectory(path: String, asRoot: Bool = false) throws -> [ADBFileEntry] {
+    func listRemoteDirectory(path: String, asRoot: Bool = false, serial: String? = nil) throws -> [ADBFileEntry] {
         let arguments: [String]
         if asRoot {
             let command = "ls -a -p -- \(shellQuote(path))"
@@ -108,16 +106,16 @@ final class ADBService: @unchecked Sendable {
             arguments = ["shell", "ls", "-a", "-p", "--", path]
         }
 
-        let output = try run(arguments: arguments)
+        let output = try run(arguments: arguments, serial: serial)
         return parseRemoteEntries(output: output, basePath: path)
     }
 
-    func reboot(_ target: ADBRebootTarget) throws -> String {
+    func reboot(_ target: ADBRebootTarget, serial: String? = nil) throws -> String {
         switch target {
         case .system:
-            return try run(arguments: ["reboot"])
+            return try run(arguments: ["reboot"], serial: serial)
         case .fastboot, .bootloader, .edl, .recovery, .sideload:
-            return try run(arguments: ["reboot", target.rawValue])
+            return try run(arguments: ["reboot", target.rawValue], serial: serial)
         }
     }
 
@@ -153,13 +151,13 @@ final class ADBService: @unchecked Sendable {
         "'\(value.replacingOccurrences(of: "'", with: "'\\''"))'"
     }
 
-    private func run(arguments: [String], timeout: TimeInterval = 20) throws -> String {
+    private func run(arguments: [String], timeout: TimeInterval = 20, serial: String? = nil) throws -> String {
         guard let executable = resolveExecutable() else {
             throw ADBServiceError.executableMissing
         }
 
         let effectiveArgs: [String]
-        if let serial = selectedSerial, serial != "-" {
+        if let serial, !serial.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, serial != "-" {
             effectiveArgs = ["-s", serial] + arguments
         } else {
             effectiveArgs = arguments

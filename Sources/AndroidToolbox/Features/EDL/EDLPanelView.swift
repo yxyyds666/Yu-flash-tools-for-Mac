@@ -14,6 +14,10 @@ struct EDLPanelView: View {
                 }
             }
 
+            Text("实验性功能：当前提供 9008 设备探测与原始命令入口，刷写等高风险能力仍在完善中。")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
             GroupBox("原始命令") {
                 HStack {
                     TextField("例如: --help", text: $viewModel.rawCommand)

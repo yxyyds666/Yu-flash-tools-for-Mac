@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AndroidToolbox
 
-private final class MockProcessRunner: ProcessRunning {
+private final class MockProcessRunner: ProcessRunning, @unchecked Sendable {
     var nextResult: ProcessRunnerResult = .init(output: "", exitCode: 0)
     var nextError: Error?
     private(set) var capturedExecutable: URL?
@@ -88,7 +88,7 @@ func adbService_runShell_throwsCommandFailedWhenExitCodeNonZero() {
 }
 
 @Test
-func adbService_runShell_withSelectedSerial_injectsDashS() throws {
+func adbService_runShell_withExplicitSerial_injectsDashS() throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "", exitCode: 0)
 
@@ -96,11 +96,26 @@ func adbService_runShell_withSelectedSerial_injectsDashS() throws {
         runner: runner,
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
-    service.selectedSerial = "abc123"
 
-    _ = try service.runShell("id")
+    _ = try service.runShell("id", serial: "abc123")
 
     #expect(runner.capturedArguments == ["-s", "abc123", "shell", "id"])
+}
+
+@Test
+func adbService_runShell_withExplicitSerial_injectsDashSWithoutMutableServiceState() throws {
+    let runner = MockProcessRunner()
+    runner.nextResult = .init(output: "", exitCode: 0)
+
+    let service = ADBService(
+        runner: runner,
+        resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
+    )
+
+    _ = try service.runShell("id", serial: "abc123")
+    _ = try service.runShell("id")
+
+    #expect(runner.capturedArguments == ["shell", "id"])
 }
 
 @Test
@@ -112,8 +127,6 @@ func adbService_runShell_withoutSelectedSerial_omitsDashS() throws {
         runner: runner,
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
-    service.selectedSerial = nil
-
     _ = try service.runShell("id")
 
     #expect(runner.capturedArguments == ["shell", "id"])
