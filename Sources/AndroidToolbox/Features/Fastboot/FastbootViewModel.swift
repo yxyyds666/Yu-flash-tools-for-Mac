@@ -59,6 +59,21 @@ final class FastbootViewModel {
     var isAutoRefreshing: Bool = false
     var isBusy: Bool = false
 
+    // MARK: - Generic flash state
+    var selectedImageURL: URL?
+    var customPartitionText: String = "boot"
+
+    let genericPartitions: [String] = [
+        "boot", "vendor_boot", "dtbo", "vbmeta", "super",
+        "recovery", "init_boot", "vendor_kernel_boot", "system", "odm"
+    ]
+
+    var canFlashGeneric: Bool {
+        selectedImageURL != nil
+            && !customPartitionText.trimmingCharacters(in: .whitespaces).isEmpty
+            && canExecuteCommand
+    }
+
     let rebootActions: [FastbootRebootAction] = [
         .init(title: "重启系统", subtitle: "fastboot reboot", target: .system),
         .init(title: "重启 Bootloader", subtitle: "fastboot reboot-bootloader", target: .bootloader),
@@ -144,6 +159,21 @@ final class FastbootViewModel {
                 appendLog("[重启] \(label)\n\(result)")
             } catch {
                 appendLog("[重启] \(label) 失败：\(error.localizedDescription)")
+            }
+        }
+    }
+
+    func flashGeneric(imageURL: URL, partition: String) {
+        guard ensureDeviceReady() else { return }
+
+        Task {
+            isBusy = true
+            defer { isBusy = false }
+            do {
+                let result = try service.flash(partition: partition, image: imageURL, serial: selectedFastbootSerial)
+                appendLog("[刷写] 分区「\(partition)」刷入完成\n\(result)")
+            } catch {
+                appendLog("[刷写] 分区「\(partition)」刷入失败：\(error.localizedDescription)")
             }
         }
     }

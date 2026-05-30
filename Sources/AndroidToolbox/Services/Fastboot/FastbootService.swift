@@ -35,6 +35,10 @@ final class FastbootService: Sendable {
         try run(arguments: ["getvar", key], serial: serial)
     }
 
+    func flash(partition: String, image: URL, serial: String? = nil) throws -> String {
+        try run(arguments: ["flash", partition, image.path], serial: serial)
+    }
+
     func reboot(_ target: FastbootRebootTarget, serial: String? = nil) throws -> String {
         switch target {
         case .system:

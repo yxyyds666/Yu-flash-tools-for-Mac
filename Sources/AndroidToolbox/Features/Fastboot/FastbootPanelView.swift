@@ -3,6 +3,8 @@ import SwiftUI
 struct FastbootPanelView: View {
     @Bindable var viewModel: FastbootViewModel
     @State private var selectedFlashMode: FastbootFlashMode = .generic
+    @State private var isFilePickerPresented = false
+    @State private var showFlashConfirmation = false
 
     private let flashColumns = [
         GridItem(.flexible(), spacing: 12),
@@ -166,7 +168,7 @@ struct FastbootPanelView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(selectedFlashMode.title)
                         .font(.title2.bold())
-                    Text("当前仅搭建刷写工作台 UI，真实刷写命令后续接入。")
+                    Text(selectedFlashMode == .generic ? "刷写工作台" : "当前仅搭建刷写工作台 UI，真实刷写命令后续接入。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -194,9 +196,40 @@ struct FastbootPanelView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
         .shadow(color: LiquidGlassTheme.secondaryShadow, radius: 9, y: 4)
+        .fileImporter(isPresented: $isFilePickerPresented, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                viewModel.selectedImageURL = urls.first
+            case .failure:
+                break
+            }
+        }
+        .confirmationDialog(
+            "确认刷写",
+            isPresented: $showFlashConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("确认刷写", role: .destructive) {
+                let partition = viewModel.customPartitionText.trimmingCharacters(in: .whitespaces)
+                guard let url = viewModel.selectedImageURL, !partition.isEmpty else { return }
+                viewModel.flashGeneric(imageURL: url, partition: partition)
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("即将把「\(viewModel.selectedImageURL?.lastPathComponent ?? "未知文件")」刷入「\(viewModel.customPartitionText)」分区。\n此操作不可撤销！")
+        }
     }
 
+    @ViewBuilder
     private var flashConfigColumn: some View {
+        if selectedFlashMode == .generic {
+            genericFlashConfigColumn
+        } else {
+            placeholderFlashConfigColumn
+        }
+    }
+
+    private var placeholderFlashConfigColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("刷写配置")
                 .font(.headline)
@@ -221,7 +254,16 @@ struct FastbootPanelView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
+    @ViewBuilder
     private var flashPartitionPreviewColumn: some View {
+        if selectedFlashMode == .generic {
+            genericPartitionPreviewColumn
+        } else {
+            placeholderPartitionPreviewColumn
+        }
+    }
+
+    private var placeholderPartitionPreviewColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("分区预览")
                 .font(.headline)
@@ -261,6 +303,82 @@ struct FastbootPanelView: View {
         .padding(.vertical, 8)
         .background(LiquidGlassTheme.panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private var genericFlashConfigColumn: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("刷写配置")
+                .font(.headline)
+
+            flashPlaceholderRow(title: "镜像文件", value: viewModel.selectedImageURL?.lastPathComponent ?? "未选择")
+
+            HStack {
+                Text("目标分区")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("分区名称", text: $viewModel.customPartitionText)
+                    .textFieldStyle(.plain)
+                    .font(.caption.weight(.bold))
+                    .multilineTextAlignment(.trailing)
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(LiquidGlassTheme.panelBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            flashPlaceholderRow(title: "设备校验", value: viewModel.selectedDevice.serial == "-" ? "未选择设备" : viewModel.selectedDevice.serial)
+
+            HStack(spacing: 10) {
+                Button("选择镜像…") {
+                    isFilePickerPresented = true
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Spacer()
+
+                Button("开始刷写") {
+                    showFlashConfirmation = true
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(!viewModel.canFlashGeneric || viewModel.isBusy)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private var genericPartitionPreviewColumn: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("常用分区")
+                .font(.headline)
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 86), spacing: 6)], spacing: 6) {
+                ForEach(viewModel.genericPartitions, id: \.self) { partition in
+                    genericPartitionButton(partition)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private func genericPartitionButton(_ partition: String) -> some View {
+        let isSelected = viewModel.customPartitionText == partition
+        return Button {
+            viewModel.customPartitionText = partition
+        } label: {
+            Text(partition)
+                .font(.caption.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 32)
+                .background(isSelected ? AnyShapeStyle(Color.orange.opacity(0.2)) : LiquidGlassTheme.panelBackground)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? Color.orange.opacity(0.5) : LiquidGlassTheme.secondaryStroke, lineWidth: 1)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
     }
 
     private func packageTitle(for mode: FastbootFlashMode) -> String {
