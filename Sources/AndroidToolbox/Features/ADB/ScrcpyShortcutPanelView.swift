@@ -47,6 +47,7 @@ final class ScrcpyShortcutPanelController {
     private let panelSize = NSSize(width: 86, height: 426)
     private var panel: NSPanel?
     private var followTimer: Timer?
+    private var lastAppliedFrame: NSRect?
     private var trackedWindowTitle: String = ""
 
     func show(windowTitle: String, onAction: @escaping (ScrcpyShortcutAction) -> Void) {
@@ -82,16 +83,18 @@ final class ScrcpyShortcutPanelController {
         followTimer = nil
         panel?.orderOut(nil)
         panel = nil
+        lastAppliedFrame = nil
         trackedWindowTitle = ""
     }
 
     private func startFollowing() {
         followTimer?.invalidate()
-        followTimer = Timer.scheduledTimer(withTimeInterval: 0.30, repeats: true) { [weak self] _ in
+        followTimer = Timer.scheduledTimer(withTimeInterval: 0.75, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.syncPosition()
             }
         }
+        followTimer?.tolerance = 0.15
     }
 
     private func syncPosition() {
@@ -111,7 +114,19 @@ final class ScrcpyShortcutPanelController {
             visibleFrame.maxY - panelSize.height - gap
         )
 
-        panel.setFrame(NSRect(x: x, y: y, width: panelSize.width, height: panelSize.height), display: true)
+        let newFrame = NSRect(x: x, y: y, width: panelSize.width, height: panelSize.height)
+        guard shouldApplyFrame(newFrame) else { return }
+
+        lastAppliedFrame = newFrame
+        panel.setFrame(newFrame, display: false)
+    }
+
+    private func shouldApplyFrame(_ frame: NSRect) -> Bool {
+        guard let lastAppliedFrame else { return true }
+        return abs(lastAppliedFrame.origin.x - frame.origin.x) > 2
+            || abs(lastAppliedFrame.origin.y - frame.origin.y) > 2
+            || abs(lastAppliedFrame.size.width - frame.size.width) > 1
+            || abs(lastAppliedFrame.size.height - frame.size.height) > 1
     }
 
     private func findScrcpyWindowFrame() -> CGRect? {
