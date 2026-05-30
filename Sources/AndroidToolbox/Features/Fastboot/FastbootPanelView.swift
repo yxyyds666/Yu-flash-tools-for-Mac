@@ -313,30 +313,26 @@ struct FastbootPanelView: View {
             Text("刷写配置")
                 .font(.headline)
 
-            HStack {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("镜像文件")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                TextField("镜像路径", text: $viewModel.customImagePath)
-                    .textFieldStyle(.plain)
-                    .font(.caption.weight(.bold))
-                    .multilineTextAlignment(.trailing)
-                    .foregroundStyle(.primary)
+                TextField("选择或输入镜像路径", text: $viewModel.customImagePath)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.caption.weight(.semibold))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(LiquidGlassTheme.panelBackground)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            HStack {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("目标分区")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                TextField("分区名称", text: $viewModel.customPartitionText)
-                    .textFieldStyle(.plain)
-                    .font(.caption.weight(.bold))
-                    .multilineTextAlignment(.trailing)
-                    .foregroundStyle(.primary)
+                TextField("输入分区名，例如 boot 或 my_partition", text: $viewModel.customPartitionText)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.caption.weight(.semibold))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
