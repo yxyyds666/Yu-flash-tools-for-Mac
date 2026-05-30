@@ -85,6 +85,7 @@ final class ADBViewModel {
 
     private let service: ADBService
     private let scrcpyService: ScrcpyService
+    private let scrcpyShortcutPanelController = ScrcpyShortcutPanelController()
     private var refreshTimer: Timer?
     private let appLogStore: AppLogStore
 
@@ -331,6 +332,7 @@ final class ADBViewModel {
                     DispatchQueue.main.async {
                         guard let self else { return }
                         self.isScrcpyRunning = false
+                        self.scrcpyShortcutPanelController.close()
                         if status != 0 {
                             let message = output.trimmingCharacters(in: .whitespacesAndNewlines)
                             let finalMessage = message.isEmpty ? "无错误输出" : message
@@ -342,6 +344,11 @@ final class ADBViewModel {
                 }
             )
             isScrcpyRunning = true
+            scrcpyShortcutPanelController.show(windowTitle: scrcpyWindowTitle) { [weak self] action in
+                Task { @MainActor in
+                    self?.handleScrcpyShortcut(action)
+                }
+            }
             appendLog("[投屏] 已启动 scrcpy（\(scrcpyMaxSize)p / \(scrcpyBitRate)Mbps）")
         } catch ScrcpyServiceError.executableMissing {
             appendLog("[投屏] 失败：未找到 scrcpy，请执行 brew install scrcpy")
@@ -373,8 +380,52 @@ final class ADBViewModel {
 
     func stopScrcpy() {
         scrcpyService.stop()
+        scrcpyShortcutPanelController.close()
         isScrcpyRunning = false
         appendLog("[投屏] 已停止")
+    }
+
+    func handleScrcpyShortcut(_ action: ScrcpyShortcutAction) {
+        switch action {
+        case .stop:
+            stopScrcpy()
+        case .screenshot:
+            captureScrcpyScreenshot()
+        case .home, .back, .recents, .power, .volumeUp, .volumeDown:
+            guard let keyEvent = action.adbKeyEvent else { return }
+            sendScrcpyKeyEvent(keyEvent, label: action.title)
+        }
+    }
+
+    private func sendScrcpyKeyEvent(_ keyEvent: Int, label: String) {
+        guard selectedDevice.isOnline else {
+            appendLog("[投屏快捷] \(label) 失败：当前设备不在线")
+            return
+        }
+
+        do {
+            _ = try service.runShell("input keyevent \(keyEvent)", serial: selectedADBSerial)
+            appendLog("[投屏快捷] 已发送：\(label)")
+        } catch {
+            appendLog("[投屏快捷] \(label) 失败：\(error.localizedDescription)")
+        }
+    }
+
+    private func captureScrcpyScreenshot() {
+        guard selectedDevice.isOnline else {
+            appendLog("[投屏快捷] 截图失败：当前设备不在线")
+            return
+        }
+
+        let fileName = "yu-toolbox-scrcpy-\(Int(Date().timeIntervalSince1970)).png"
+        let remotePath = "/sdcard/Pictures/\(fileName)"
+
+        do {
+            _ = try service.runShell("screencap -p \(remotePath)", serial: selectedADBSerial)
+            appendLog("[投屏快捷] 已截图到设备：\(remotePath)")
+        } catch {
+            appendLog("[投屏快捷] 截图失败：\(error.localizedDescription)")
+        }
     }
 
     func pullFile() {

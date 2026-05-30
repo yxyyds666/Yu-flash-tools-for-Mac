@@ -171,7 +171,7 @@ struct ADBPanelView: View {
 
                 HStack(alignment: .top, spacing: 14) {
                     scrcpyVirtualDisplayCard
-                    scrcpyKeyMappingCard
+                    scrcpyFloatingShortcutCard
                 }
             }
             .padding(4)
@@ -200,26 +200,19 @@ struct ADBPanelView: View {
                     .foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 10) {
-                TextField("窗口标题", text: $viewModel.scrcpyWindowTitle)
-                    .textFieldStyle(.roundedBorder)
-                    .controlSize(.large)
-
-                Button {
-                    if viewModel.isScrcpyRunning {
-                        viewModel.stopScrcpy()
-                    } else {
-                        viewModel.startScrcpy()
-                    }
-                } label: {
-                    Label(viewModel.isScrcpyRunning ? "停止投屏" : "启动投屏", systemImage: viewModel.isScrcpyRunning ? "stop.fill" : "play.fill")
-                        .frame(width: 134)
+            Button {
+                if viewModel.isScrcpyRunning {
+                    viewModel.stopScrcpy()
+                } else {
+                    viewModel.startScrcpy()
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(viewModel.isScrcpyRunning ? .gray : .red)
+            } label: {
+                Label(viewModel.isScrcpyRunning ? "停止投屏" : "启动投屏", systemImage: viewModel.isScrcpyRunning ? "stop.fill" : "play.fill")
+                    .frame(width: 160)
             }
-            .frame(maxWidth: 700)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(viewModel.isScrcpyRunning ? .gray : .red)
 
             Label(viewModel.isScrcpyRunning ? "状态：投屏中" : "状态：未启动", systemImage: viewModel.isScrcpyRunning ? "checkmark.circle.fill" : "circle.dashed")
                 .font(.caption.weight(.semibold))
@@ -313,24 +306,20 @@ struct ADBPanelView: View {
         }
     }
 
-    private var scrcpyKeyMappingCard: some View {
-        scrcpyCard(title: "快捷控制", subtitle: "保留给后续键鼠映射和录制能力。") {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(["截图", "录制", "Home", "Back", "菜单", "旋转"], id: \.self) { title in
-                    Text(title)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, minHeight: 42)
-                        .background(LiquidGlassTheme.panelBackground)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
+    private var scrcpyFloatingShortcutCard: some View {
+        scrcpyCard(title: "浮动快捷控制", subtitle: "启动投屏后自动挂在 scrcpy 窗口右侧。") {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("快捷控制不再放在主界面里", systemImage: "rectangle.connected.to.line.below")
+                    .font(.subheadline.weight(.semibold))
+                Text("启动 scrcpy 后会出现独立浮动控制条，包含停止、截图、Home、Back、最近任务、电源和音量控制。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(2)
             }
 
-            Text("这些能力还未接入命令执行，仅作为后续功能入口的 UI 占位。")
+            Divider()
+
+            Text("如果系统无法定位 scrcpy 窗口，浮窗会保持上一次位置，不影响投屏本身。")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
