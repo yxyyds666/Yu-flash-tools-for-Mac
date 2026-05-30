@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 enum ADBPanelRoute: Hashable {
@@ -27,16 +28,23 @@ struct ADBPanelView: View {
         VStack(alignment: .leading, spacing: 12) {
             headerRow
 
-            switch route {
-            case .home:
-                homeContent
-            case .fileManager:
-                fileManagementSection
-            case .appManagement:
-                appManagementSection
-            case .scrcpy:
-                scrcpySection
+            Group {
+                switch route {
+                case .home:
+                    homeContent
+                        .transition(.opacity)
+                case .fileManager:
+                    fileManagementSection
+                        .transition(.opacity)
+                case .appManagement:
+                    appManagementSection
+                        .transition(.opacity)
+                case .scrcpy:
+                    scrcpySection
+                        .transition(.opacity)
+                }
             }
+            .animation(.easeInOut(duration: 0.22), value: route)
         }
         .padding(20)
         .background(LiquidGlassTheme.panelBackground)
@@ -63,7 +71,9 @@ struct ADBPanelView: View {
         HStack(spacing: 12) {
             if route != .home {
                 Button {
-                    route = .home
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        route = .home
+                    }
                 } label: {
                     Label("返回", systemImage: "chevron.left")
                 }
@@ -127,7 +137,7 @@ struct ADBPanelView: View {
                     subtitle: "可视化文件浏览",
                     systemImage: "folder.fill",
                     tint: .yellow,
-                    action: { route = .fileManager }
+                    action: { withAnimation(.easeInOut(duration: 0.22)) { route = .fileManager } }
                 )
 
                 featureTile(
@@ -135,7 +145,7 @@ struct ADBPanelView: View {
                     subtitle: "安装与卸载应用",
                     systemImage: "square.and.arrow.down.fill",
                     tint: .green,
-                    action: { route = .appManagement }
+                    action: { withAnimation(.easeInOut(duration: 0.22)) { route = .appManagement } }
                 )
 
                 featureTile(
@@ -143,88 +153,279 @@ struct ADBPanelView: View {
                     subtitle: "scrcpy 实时投屏",
                     systemImage: "display.2",
                     tint: .blue,
-                    action: { route = .scrcpy }
+                    action: { withAnimation(.easeInOut(duration: 0.22)) { route = .scrcpy } }
                 )
             }
         }
     }
 
     private var scrcpySection: some View {
-        VStack {
-            GroupBox("scrcpy 投屏") {
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(spacing: 10) {
-                        Button("流畅") {
-                            viewModel.scrcpyMaxSize = 1024
-                            viewModel.scrcpyBitRate = 6
-                            viewModel.scrcpyMaxFPS = 30
-                        }
-                        .buttonStyle(.bordered)
-                        Button("均衡") {
-                            viewModel.scrcpyMaxSize = 1440
-                            viewModel.scrcpyBitRate = 10
-                            viewModel.scrcpyMaxFPS = 60
-                        }
-                        .buttonStyle(.bordered)
-                        Button("高清") {
-                            viewModel.scrcpyMaxSize = 1920
-                            viewModel.scrcpyBitRate = 16
-                            viewModel.scrcpyMaxFPS = 60
-                        }
-                        .buttonStyle(.bordered)
-                        Spacer()
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                scrcpyHeroCard
 
-                    HStack(alignment: .top, spacing: 20) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Stepper("分辨率：\(viewModel.scrcpyMaxSize)", value: $viewModel.scrcpyMaxSize, in: 640...2560, step: 64)
-                            Stepper("码率：\(viewModel.scrcpyBitRate) Mbps", value: $viewModel.scrcpyBitRate, in: 2...32)
-                            Stepper("帧率：\(viewModel.scrcpyMaxFPS) FPS", value: $viewModel.scrcpyMaxFPS, in: 15...120, step: 5)
-
-                            TextField("窗口标题", text: $viewModel.scrcpyWindowTitle)
-                                .textFieldStyle(.roundedBorder)
-
-                            HStack(spacing: 10) {
-                                Button {
-                                    viewModel.startScrcpy()
-                                } label: {
-                                    Label("启动投屏", systemImage: "play.fill")
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .disabled(viewModel.isScrcpyRunning)
-
-                                Button {
-                                    viewModel.stopScrcpy()
-                                } label: {
-                                    Label("停止投屏", systemImage: "stop.fill")
-                                }
-                                .buttonStyle(.bordered)
-                                .disabled(!viewModel.isScrcpyRunning)
-                            }
-
-                            Text(viewModel.isScrcpyRunning ? "状态：投屏中" : "状态：未启动")
-                                .font(.caption)
-                                .foregroundStyle(viewModel.isScrcpyRunning ? .green : .secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Toggle("关闭手机屏幕", isOn: $viewModel.scrcpyTurnScreenOff)
-                            Toggle("全屏启动", isOn: $viewModel.scrcpyFullscreen)
-                            Toggle("窗口置顶", isOn: $viewModel.scrcpyAlwaysOnTop)
-                            Toggle("禁用音频", isOn: $viewModel.scrcpyNoAudio)
-                            Toggle("只读模式（禁控制）", isOn: $viewModel.scrcpyNoControl)
-                            Toggle("显示触摸点", isOn: $viewModel.scrcpyShowTouches)
-                        }
-                        .toggleStyle(.checkbox)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                    }
+                HStack(alignment: .top, spacing: 14) {
+                    scrcpyQualityCard
+                    scrcpyOptionsCard
                 }
-                .padding(.vertical, 8)
+
+                HStack(alignment: .top, spacing: 14) {
+                    scrcpyVirtualDisplayCard
+                    scrcpyKeyMappingCard
+                }
             }
-            .frame(maxWidth: 940)
+            .padding(4)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var scrcpyHeroCard: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color.white.opacity(0.94))
+                    .frame(width: 74, height: 74)
+                    .shadow(color: Color.black.opacity(0.14), radius: 18, y: 8)
+
+                scrcpyIconImage
+                    .frame(width: 50, height: 50)
+            }
+
+            VStack(spacing: 4) {
+                Text("scrcpy 投屏控制台")
+                    .font(.system(size: 31, weight: .bold, design: .rounded))
+                Text("低延迟 Android 投屏，适合演示、录制、调试和日常控制。")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 10) {
+                TextField("窗口标题", text: $viewModel.scrcpyWindowTitle)
+                    .textFieldStyle(.roundedBorder)
+                    .controlSize(.large)
+
+                Button {
+                    if viewModel.isScrcpyRunning {
+                        viewModel.stopScrcpy()
+                    } else {
+                        viewModel.startScrcpy()
+                    }
+                } label: {
+                    Label(viewModel.isScrcpyRunning ? "停止投屏" : "启动投屏", systemImage: viewModel.isScrcpyRunning ? "stop.fill" : "play.fill")
+                        .frame(width: 134)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(viewModel.isScrcpyRunning ? .gray : .red)
+            }
+            .frame(maxWidth: 700)
+
+            Label(viewModel.isScrcpyRunning ? "状态：投屏中" : "状态：未启动", systemImage: viewModel.isScrcpyRunning ? "checkmark.circle.fill" : "circle.dashed")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(viewModel.isScrcpyRunning ? .green : .secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(26)
+        .background(LiquidGlassTheme.cardBackground)
+        .background(LiquidGlassTheme.cardTint)
+        .overlay(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
+                .fill(LiquidGlassTheme.glow)
+                .opacity(0.28)
+                .padding(1)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
+                .stroke(LiquidGlassTheme.stroke, lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
+        .shadow(color: LiquidGlassTheme.shadow, radius: 12, y: 5)
+    }
+
+    @ViewBuilder
+    private var scrcpyIconImage: some View {
+        if let url = Bundle.module.url(forResource: "scrcpy", withExtension: "svg", subdirectory: "Resources"),
+           let image = NSImage(contentsOf: url) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+        } else {
+            Image(systemName: "display.and.arrow.down")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(.red)
+        }
+    }
+
+    private var scrcpyQualityCard: some View {
+        scrcpyCard(title: "画质配置", subtitle: "控制投屏清晰度、码率和帧率。") {
+            HStack(spacing: 8) {
+                scrcpyPresetButton("流畅", preset: .smooth)
+                scrcpyPresetButton("均衡", preset: .balanced)
+                scrcpyPresetButton("高清", preset: .highDefinition)
+            }
+
+            Divider()
+
+            scrcpySliderRow(title: "最大分辨率", subtitle: "--max-size", value: $viewModel.scrcpyMaxSize, range: 640...2560, step: 64, suffix: "")
+            scrcpySliderRow(title: "视频码率", subtitle: "--video-bit-rate", value: $viewModel.scrcpyBitRate, range: 2...32, step: 1, suffix: " Mbps")
+            scrcpySliderRow(title: "最大帧率", subtitle: "--max-fps", value: $viewModel.scrcpyMaxFPS, range: 15...120, step: 5, suffix: " FPS")
+        }
+    }
+
+    private var scrcpyOptionsCard: some View {
+        scrcpyCard(title: "启动选项", subtitle: "常用投屏行为和控制权限。") {
+            scrcpyToggleRow(title: "关闭手机屏幕", subtitle: "启动后熄灭设备屏幕", isOn: $viewModel.scrcpyTurnScreenOff)
+            scrcpyToggleRow(title: "全屏启动", subtitle: "直接进入全屏投屏窗口", isOn: $viewModel.scrcpyFullscreen)
+            scrcpyToggleRow(title: "窗口置顶", subtitle: "让投屏窗口保持在最前", isOn: $viewModel.scrcpyAlwaysOnTop)
+            scrcpyToggleRow(title: "禁用音频", subtitle: "只传输视频画面", isOn: $viewModel.scrcpyNoAudio)
+            scrcpyToggleRow(title: "只读模式", subtitle: "禁用鼠标键盘控制", isOn: $viewModel.scrcpyNoControl)
+            scrcpyToggleRow(title: "显示触摸点", subtitle: "在设备上显示触控反馈", isOn: $viewModel.scrcpyShowTouches)
+        }
+    }
+
+    private var scrcpyVirtualDisplayCard: some View {
+        scrcpyCard(title: "显示预览", subtitle: "根据当前画质参数生成投屏配置摘要。") {
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(LinearGradient(colors: [Color.red.opacity(0.90), Color.orange.opacity(0.70)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 116, height: 154)
+                    .overlay {
+                        VStack(spacing: 6) {
+                            Image(systemName: "iphone")
+                                .font(.system(size: 26, weight: .semibold))
+                            Text("\(viewModel.scrcpyMaxSize)p")
+                                .font(.title3.bold())
+                            Text("\(viewModel.scrcpyMaxFPS) FPS")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .foregroundStyle(.white)
+                    }
+                    .shadow(color: Color.red.opacity(0.20), radius: 12, y: 6)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    scrcpySummaryRow("码率", value: "\(viewModel.scrcpyBitRate) Mbps")
+                    scrcpySummaryRow("音频", value: viewModel.scrcpyNoAudio ? "关闭" : "开启")
+                    scrcpySummaryRow("控制", value: viewModel.scrcpyNoControl ? "只读" : "可控制")
+                    scrcpySummaryRow("窗口", value: viewModel.scrcpyFullscreen ? "全屏" : "窗口模式")
+                }
+            }
+        }
+    }
+
+    private var scrcpyKeyMappingCard: some View {
+        scrcpyCard(title: "快捷控制", subtitle: "保留给后续键鼠映射和录制能力。") {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(["截图", "录制", "Home", "Back", "菜单", "旋转"], id: \.self) { title in
+                    Text(title)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 42)
+                        .background(LiquidGlassTheme.panelBackground)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+
+            Text("这些能力还未接入命令执行，仅作为后续功能入口的 UI 占位。")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private func scrcpyCard<Content: View>(title: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(16)
+        .background(LiquidGlassTheme.cardBackground)
+        .overlay {
+            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
+                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
+        .shadow(color: LiquidGlassTheme.secondaryShadow, radius: 8, y: 3)
+    }
+
+    private func scrcpyPresetButton(_ title: String, preset: ScrcpyPreset) -> some View {
+        Button(title) {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                viewModel.applyScrcpyPreset(preset)
+            }
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+    }
+
+    private func scrcpySliderRow(title: String, subtitle: String, value: Binding<Int>, range: ClosedRange<Double>, step: Double, suffix: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Text("\(value.wrappedValue)\(suffix)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(LiquidGlassTheme.panelBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
+
+            Slider(
+                value: Binding(
+                    get: { Double(value.wrappedValue) },
+                    set: { value.wrappedValue = Int($0) }
+                ),
+                in: range,
+                step: step
+            )
+            .tint(.red)
+        }
+    }
+
+    private func scrcpyToggleRow(title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text(subtitle)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .toggleStyle(.switch)
+        .tint(.red)
+    }
+
+    private func scrcpySummaryRow(_ title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(.caption.weight(.bold))
+        }
     }
 
     private func featureTile(

@@ -23,6 +23,12 @@ struct InstalledApp: Identifiable {
     var id: String { packageName }
 }
 
+enum ScrcpyPreset {
+    case smooth
+    case balanced
+    case highDefinition
+}
+
 @Observable
 @MainActor
 final class ADBViewModel {
@@ -345,6 +351,23 @@ final class ADBViewModel {
             appendLog("[投屏] 启动失败：\(finalMessage)")
         } catch {
             appendLog("[投屏] 启动失败：\(error.localizedDescription)")
+        }
+    }
+
+    func applyScrcpyPreset(_ preset: ScrcpyPreset) {
+        switch preset {
+        case .smooth:
+            scrcpyMaxSize = 1024
+            scrcpyBitRate = 6
+            scrcpyMaxFPS = 30
+        case .balanced:
+            scrcpyMaxSize = 1440
+            scrcpyBitRate = 10
+            scrcpyMaxFPS = 60
+        case .highDefinition:
+            scrcpyMaxSize = 1920
+            scrcpyBitRate = 16
+            scrcpyMaxFPS = 60
         }
     }
 
