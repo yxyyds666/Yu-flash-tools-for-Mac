@@ -160,23 +160,19 @@ struct ADBPanelView: View {
     }
 
     private var scrcpySection: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                scrcpyHeroCard
+        VStack(alignment: .leading, spacing: 14) {
+            scrcpyHeroCard
 
-                HStack(alignment: .top, spacing: 14) {
-                    scrcpyQualityCard
-                    scrcpyOptionsCard
-                }
-
-                HStack(alignment: .top, spacing: 14) {
-                    scrcpyVirtualDisplayCard
-                    scrcpyFloatingShortcutCard
-                }
+            HStack(alignment: .top, spacing: 14) {
+                scrcpyQualityCard
+                scrcpyOptionsCard
             }
-            .padding(4)
+
+            HStack(alignment: .top, spacing: 14) {
+                scrcpyVirtualDisplayCard
+                scrcpyFloatingShortcutCard
+            }
         }
-        .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 

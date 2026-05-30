@@ -50,7 +50,7 @@ struct YutoolsApp: App {
             AppShellView()
         }
         .windowResizability(.contentSize)
-        .defaultSize(width: 1380, height: 960)
+        .defaultSize(width: AppWindowMetrics.width, height: AppWindowMetrics.height)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified)
     }
