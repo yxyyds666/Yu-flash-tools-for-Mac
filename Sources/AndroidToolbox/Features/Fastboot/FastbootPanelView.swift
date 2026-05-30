@@ -4,11 +4,6 @@ struct FastbootPanelView: View {
     @Bindable var viewModel: FastbootViewModel
     @State private var selectedFlashMode: FastbootFlashMode = .generic
 
-    private let rebootColumns = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10)
-    ]
-
     private let flashColumns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12),
@@ -66,22 +61,23 @@ struct FastbootPanelView: View {
 
     private var rebootSection: some View {
         GroupBox("快速重启") {
-            LazyVGrid(columns: rebootColumns, spacing: 10) {
+            HStack(spacing: 10) {
                 ForEach(viewModel.rebootActions) { action in
                     Button {
                         viewModel.reboot(to: action.target, label: action.title)
                     } label: {
-                        VStack(spacing: 8) {
+                        HStack(spacing: 8) {
                             Image(systemName: iconName(for: action.target))
-                                .font(.system(size: 22, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(.primary)
                             Text(action.title)
-                                .font(.title3.weight(.bold))
+                                .font(.subheadline.weight(.bold))
                                 .foregroundStyle(.primary)
-                                .multilineTextAlignment(.center)
+                                .lineLimit(1)
                         }
-                        .frame(maxWidth: .infinity, minHeight: 84, alignment: .center)
-                        .padding(10)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
                         .background(LiquidGlassTheme.cardBackground)
                         .overlay {
                             RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
@@ -94,6 +90,7 @@ struct FastbootPanelView: View {
                     .disabled(!viewModel.canExecuteCommand || viewModel.isBusy)
                 }
             }
+            .padding(.vertical, 4)
         }
     }
 
