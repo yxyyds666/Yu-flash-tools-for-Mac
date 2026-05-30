@@ -60,7 +60,7 @@ final class FastbootViewModel {
     var isBusy: Bool = false
 
     // MARK: - Generic flash state
-    var selectedImageURL: URL?
+    var customImagePath: String = ""
     var customPartitionText: String = "boot"
 
     let genericPartitions: [String] = [
@@ -69,7 +69,7 @@ final class FastbootViewModel {
     ]
 
     var canFlashGeneric: Bool {
-        selectedImageURL != nil
+        !customImagePath.trimmingCharacters(in: .whitespaces).isEmpty
             && !customPartitionText.trimmingCharacters(in: .whitespaces).isEmpty
             && canExecuteCommand
     }
@@ -163,14 +163,15 @@ final class FastbootViewModel {
         }
     }
 
-    func flashGeneric(imageURL: URL, partition: String) {
+    func flashGeneric(imagePath: String, partition: String) {
         guard ensureDeviceReady() else { return }
 
         Task {
             isBusy = true
             defer { isBusy = false }
             do {
-                let result = try service.flash(partition: partition, image: imageURL, serial: selectedFastbootSerial)
+                let url = URL(fileURLWithPath: imagePath)
+                let result = try service.flash(partition: partition, image: url, serial: selectedFastbootSerial)
                 appendLog("[刷写] 分区「\(partition)」刷入完成\n\(result)")
             } catch {
                 appendLog("[刷写] 分区「\(partition)」刷入失败：\(error.localizedDescription)")

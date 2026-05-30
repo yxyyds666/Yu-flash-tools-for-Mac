@@ -199,7 +199,9 @@ struct FastbootPanelView: View {
         .fileImporter(isPresented: $isFilePickerPresented, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
             switch result {
             case .success(let urls):
-                viewModel.selectedImageURL = urls.first
+                if let url = urls.first {
+                    viewModel.customImagePath = url.path
+                }
             case .failure:
                 break
             }
@@ -210,13 +212,14 @@ struct FastbootPanelView: View {
             titleVisibility: .visible
         ) {
             Button("确认刷写", role: .destructive) {
+                let image = viewModel.customImagePath.trimmingCharacters(in: .whitespaces)
                 let partition = viewModel.customPartitionText.trimmingCharacters(in: .whitespaces)
-                guard let url = viewModel.selectedImageURL, !partition.isEmpty else { return }
-                viewModel.flashGeneric(imageURL: url, partition: partition)
+                guard !image.isEmpty, !partition.isEmpty else { return }
+                viewModel.flashGeneric(imagePath: image, partition: partition)
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("即将把「\(viewModel.selectedImageURL?.lastPathComponent ?? "未知文件")」刷入「\(viewModel.customPartitionText)」分区。\n此操作不可撤销！")
+            Text("即将把「\(viewModel.customImagePath.isEmpty ? "未知文件" : viewModel.customImagePath)」刷入「\(viewModel.customPartitionText)」分区。\n此操作不可撤销！")
         }
     }
 
@@ -310,7 +313,20 @@ struct FastbootPanelView: View {
             Text("刷写配置")
                 .font(.headline)
 
-            flashPlaceholderRow(title: "镜像文件", value: viewModel.selectedImageURL?.lastPathComponent ?? "未选择")
+            HStack {
+                Text("镜像文件")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("镜像路径", text: $viewModel.customImagePath)
+                    .textFieldStyle(.plain)
+                    .font(.caption.weight(.bold))
+                    .multilineTextAlignment(.trailing)
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(LiquidGlassTheme.panelBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             HStack {
                 Text("目标分区")
