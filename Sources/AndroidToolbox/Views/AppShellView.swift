@@ -74,7 +74,7 @@ struct AppShellView: View {
             .shadow(color: LiquidGlassTheme.shadow, radius: 18, y: 8)
             .padding(8)
         }
-        .frame(width: 1280, height: 860)
+        .frame(width: 1380, height: 960)
         .background(WindowConfigurator())
         .alert("功能暂未开放", isPresented: $showUnavailableModeAlert) {
             Button("知道了", role: .cancel) {}

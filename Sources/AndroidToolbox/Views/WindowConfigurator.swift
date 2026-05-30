@@ -29,9 +29,9 @@ struct WindowConfigurator: NSViewRepresentable {
             window.isOpaque = false
             window.backgroundColor = .clear
             window.toolbarStyle = .unified
-            window.setContentSize(NSSize(width: 1280, height: 860))
-            window.minSize = NSSize(width: 1280, height: 860)
-            window.maxSize = NSSize(width: 1280, height: 860)
+            window.setContentSize(NSSize(width: 1380, height: 960))
+            window.minSize = NSSize(width: 1380, height: 960)
+            window.maxSize = NSSize(width: 1380, height: 960)
 
             configuredWindowNumbers.insert(windowNumber)
         }

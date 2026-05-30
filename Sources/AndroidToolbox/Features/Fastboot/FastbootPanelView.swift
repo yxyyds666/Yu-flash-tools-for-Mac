@@ -13,15 +13,9 @@ struct FastbootPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             headerRow
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    rebootSection
-                    flashWorkspaceSection
-                }
-                .padding(4)
-            }
-            .scrollIndicators(.hidden)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            rebootSection
+            flashWorkspaceSection
+            Spacer(minLength: 0)
         }
         .padding(20)
         .background(LiquidGlassTheme.panelBackground)
