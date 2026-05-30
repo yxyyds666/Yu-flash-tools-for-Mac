@@ -13,9 +13,15 @@ struct FastbootPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             headerRow
-            rebootSection
-            flashWorkspaceSection
-            Spacer(minLength: 0)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    rebootSection
+                    flashWorkspaceSection
+                }
+                .padding(4)
+            }
+            .scrollIndicators(.hidden)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .padding(20)
         .background(LiquidGlassTheme.panelBackground)
@@ -147,8 +153,8 @@ struct FastbootPanelView: View {
                     .background(LiquidGlassTheme.panelBackground)
                     .clipShape(Capsule())
             }
-            .frame(maxWidth: .infinity, minHeight: 128, alignment: .topLeading)
-            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
+            .padding(12)
             .background(LiquidGlassTheme.cardBackground)
             .overlay {
                 RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
@@ -161,7 +167,7 @@ struct FastbootPanelView: View {
     }
 
     private var flashDetailCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(selectedFlashMode.title)
@@ -185,7 +191,7 @@ struct FastbootPanelView: View {
                 flashPartitionPreviewColumn
             }
         }
-        .padding(16)
+        .padding(14)
         .background(LiquidGlassTheme.cardBackground)
         .background(LiquidGlassTheme.cardTint)
         .overlay {
