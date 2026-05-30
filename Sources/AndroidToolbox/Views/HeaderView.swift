@@ -24,7 +24,7 @@ struct HeaderView: View {
                     .foregroundStyle(.white, .pink)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("Yu 工具箱")
+                Text("羽工具箱")
                     .font(.title3.bold())
                 Text("ADB · Fastboot · EDL")
                     .font(.caption)

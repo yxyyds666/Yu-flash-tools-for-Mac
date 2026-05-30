@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "AndroidToolbox",
+    name: "Yutools",
     platforms: [
         .macOS(.v15)
     ],
     products: [
-        .executable(name: "AndroidToolbox", targets: ["AndroidToolbox"])
+        .executable(name: "Yutools", targets: ["AndroidToolbox"])
     ],
     targets: [
         .executableTarget(

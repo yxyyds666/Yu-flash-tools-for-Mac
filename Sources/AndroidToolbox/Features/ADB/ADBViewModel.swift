@@ -54,7 +54,7 @@ final class ADBViewModel {
     var scrcpyNoAudio: Bool = false
     var scrcpyNoControl: Bool = false
     var scrcpyShowTouches: Bool = false
-    var scrcpyWindowTitle: String = "Yu 工具箱"
+    var scrcpyWindowTitle: String = "羽工具箱"
 
     var localCurrentPath: String = NSHomeDirectory()
     var remoteCurrentPath: String = "/sdcard"

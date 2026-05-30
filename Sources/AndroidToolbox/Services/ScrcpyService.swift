@@ -54,7 +54,7 @@ final class ScrcpyService {
         noControl: Bool = false,
         showTouches: Bool = false,
         windowTitle: String? = nil,
-        onTerminate: ((Int32, String) -> Void)? = nil
+        onTerminate: (@Sendable (Int32, String) -> Void)? = nil
     ) throws {
         guard let executable = locate() else {
             throw ScrcpyServiceError.executableMissing

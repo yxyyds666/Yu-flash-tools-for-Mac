@@ -38,7 +38,7 @@ enum AppIconProvider {
 }
 
 @main
-struct AndroidToolboxApp: App {
+struct YutoolsApp: App {
     init() {
         if let icon = AppIconProvider.circularIcon() {
             NSApplication.shared.applicationIconImage = icon
@@ -46,7 +46,7 @@ struct AndroidToolboxApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Yu 工具箱") {
+        WindowGroup("羽工具箱") {
             AppShellView()
         }
         .windowResizability(.contentSize)

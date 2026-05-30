@@ -1,4 +1,4 @@
-# Yu 工具箱
+# 羽工具箱
 
 中文 | [English](#english)
 
@@ -6,7 +6,7 @@
 
 > 当前开放能力：**ADB / Fastboot**。Qualcomm EDL (9008) 暂未开放。
 
-![Yu 工具箱 App Icon](Sources/AndroidToolbox/Resources/app-icon.png)
+![羽工具箱 App Icon](Sources/AndroidToolbox/Resources/app-icon.png)
 
 ---
 
@@ -14,7 +14,7 @@
 
 ### 项目简介
 
-**Yu 工具箱** 是一个用于 macOS 的 Android 设备管理与调试工具，围绕高频操作进行整合，降低命令行门槛，提升日常效率。
+**羽工具箱** 是一个用于 macOS 的 Android 设备管理与调试工具，围绕高频操作进行整合，降低命令行门槛，提升日常效率。
 
 ### 核心功能
 
@@ -40,7 +40,7 @@ brew install scrcpy
 
 ```bash
 swift build
-swift run AndroidToolbox
+swift run Yutools
 ```
 
 ### 运行测试
@@ -59,7 +59,7 @@ swift test
 
 ### Overview
 
-**Yu Toolbox** is a macOS toolbox for Android device management and debugging workflows. It consolidates common operations into a single desktop app to reduce command-line overhead and improve daily productivity.
+**Yutools** is a macOS toolbox for Android device management and debugging workflows. It consolidates common operations into a single desktop app to reduce command-line overhead and improve daily productivity.
 
 ### Key Features
 
@@ -85,7 +85,7 @@ brew install scrcpy
 
 ```bash
 swift build
-swift run AndroidToolbox
+swift run Yutools
 ```
 
 ### Tests
