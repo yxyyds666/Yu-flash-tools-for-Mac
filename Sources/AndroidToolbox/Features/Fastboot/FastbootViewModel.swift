@@ -31,7 +31,13 @@ final class FastbootViewModel {
 
     private let service: FastbootService
     private var refreshTimer: Timer?
+    private var isRefreshingDevices = false
     private let appLogStore: AppLogStore
+
+    private var selectedFastbootSerial: String? {
+        let serial = selectedDevice.serial.trimmingCharacters(in: .whitespacesAndNewlines)
+        return serial.isEmpty || serial == "-" ? nil : serial
+    }
 
     init(service: FastbootService = FastbootService(), appLogStore: AppLogStore = AppLogStore()) {
         self.service = service
@@ -65,7 +71,6 @@ final class FastbootViewModel {
 
     func selectDevice(_ device: DeviceInfo) {
         selectedDevice = device
-        service.selectedSerial = device.serial == "-" ? nil : device.serial
         appendLog("[设备] 已切换：\(device.serial)（\(device.model)）")
     }
 
@@ -77,7 +82,7 @@ final class FastbootViewModel {
             isBusy = true
             defer { isBusy = false }
             do {
-                let result = try service.getVar(varKey)
+                let result = try service.getVar(varKey, serial: selectedFastbootSerial)
                 appendLog("[getvar] \(varKey)\n\(result)")
             } catch {
                 appendLog("[getvar] 失败：\(error.localizedDescription)")
@@ -92,7 +97,7 @@ final class FastbootViewModel {
             isBusy = true
             defer { isBusy = false }
             do {
-                let result = try service.reboot(target)
+                let result = try service.reboot(target, serial: selectedFastbootSerial)
                 appendLog("[重启] \(label)\n\(result)")
             } catch {
                 appendLog("[重启] \(label) 失败：\(error.localizedDescription)")
@@ -109,8 +114,19 @@ final class FastbootViewModel {
     }
 
     private func refreshDevices(showLog: Bool) async {
-        do {
-            let list = try service.listDevices()
+        guard !isRefreshingDevices else { return }
+        isRefreshingDevices = true
+
+        let service = service
+        let serial = selectedFastbootSerial
+        let result = await Task.detached {
+            Result { try service.listDevices(serial: serial) }
+        }.value
+
+        isRefreshingDevices = false
+
+        switch result {
+        case .success(let list):
             devices = list
 
             if let matched = list.first(where: { $0.serial == selectedDevice.serial }) {
@@ -118,12 +134,11 @@ final class FastbootViewModel {
             } else {
                 selectedDevice = list.first ?? .disconnected
             }
-            service.selectedSerial = selectedDevice.serial == "-" ? nil : selectedDevice.serial
 
             if showLog {
                 appendLog("[fastboot devices] 刷新完成：共 \(list.count) 台")
             }
-        } catch {
+        case .failure(let error):
             if showLog {
                 appendLog("[fastboot devices] 刷新失败：\(error.localizedDescription)")
             }

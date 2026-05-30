@@ -87,6 +87,7 @@ final class ADBViewModel {
     private let scrcpyService: ScrcpyService
     private let scrcpyShortcutPanelController = ScrcpyShortcutPanelController()
     private var refreshTimer: Timer?
+    private var isRefreshingDevices = false
     private let appLogStore: AppLogStore
 
     private var selectedADBSerial: String? {
@@ -403,11 +404,20 @@ final class ADBViewModel {
             return
         }
 
-        do {
-            _ = try service.runShell("input keyevent \(keyEvent)", serial: selectedADBSerial)
-            appendLog("[投屏快捷] 已发送：\(label)")
-        } catch {
-            appendLog("[投屏快捷] \(label) 失败：\(error.localizedDescription)")
+        let service = service
+        let serial = selectedADBSerial
+        Task { [weak self, service, serial, keyEvent, label] in
+            let result = await Task.detached {
+                Result { try service.runShell("input keyevent \(keyEvent)", serial: serial) }
+            }.value
+
+            guard let self else { return }
+            switch result {
+            case .success:
+                self.appendLog("[投屏快捷] 已发送：\(label)")
+            case .failure(let error):
+                self.appendLog("[投屏快捷] \(label) 失败：\(error.localizedDescription)")
+            }
         }
     }
 
@@ -420,11 +430,20 @@ final class ADBViewModel {
         let fileName = "yu-toolbox-scrcpy-\(Int(Date().timeIntervalSince1970)).png"
         let remotePath = "/sdcard/Pictures/\(fileName)"
 
-        do {
-            _ = try service.runShell("screencap -p \(remotePath)", serial: selectedADBSerial)
-            appendLog("[投屏快捷] 已截图到设备：\(remotePath)")
-        } catch {
-            appendLog("[投屏快捷] 截图失败：\(error.localizedDescription)")
+        let service = service
+        let serial = selectedADBSerial
+        Task { [weak self, service, serial, remotePath] in
+            let result = await Task.detached {
+                Result { try service.runShell("screencap -p \(remotePath)", serial: serial) }
+            }.value
+
+            guard let self else { return }
+            switch result {
+            case .success:
+                self.appendLog("[投屏快捷] 已截图到设备：\(remotePath)")
+            case .failure(let error):
+                self.appendLog("[投屏快捷] 截图失败：\(error.localizedDescription)")
+            }
         }
     }
 
@@ -458,21 +477,33 @@ final class ADBViewModel {
     }
 
     private func refreshDevices(showLog: Bool) {
-        do {
-            let list = try service.listDevices()
-            devices = list.devices
+        guard !isRefreshingDevices else { return }
+        isRefreshingDevices = true
 
-            if let matched = list.devices.first(where: { $0.serial == selectedDevice.serial }) {
-                selectedDevice = matched
-            } else {
-                selectedDevice = list.devices.first ?? .disconnected
-            }
-            if showLog {
-                appendLog("[设备] 刷新完成：共 \(list.devices.count) 台")
-            }
-        } catch {
-            if showLog {
-                appendLog("[设备] 刷新失败：\(error.localizedDescription)")
+        let service = service
+        Task { [weak self, service, showLog] in
+            let result = await Task.detached {
+                Result { try service.listDevices() }
+            }.value
+
+            guard let self else { return }
+            self.isRefreshingDevices = false
+
+            switch result {
+            case .success(let list):
+                self.devices = list.devices
+                if let matched = list.devices.first(where: { $0.serial == self.selectedDevice.serial }) {
+                    self.selectedDevice = matched
+                } else {
+                    self.selectedDevice = list.devices.first ?? .disconnected
+                }
+                if showLog {
+                    self.appendLog("[设备] 刷新完成：共 \(list.devices.count) 台")
+                }
+            case .failure(let error):
+                if showLog {
+                    self.appendLog("[设备] 刷新失败：\(error.localizedDescription)")
+                }
             }
         }
     }

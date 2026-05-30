@@ -12,41 +12,47 @@ enum FastbootRebootTarget: String {
     case recovery
 }
 
-final class FastbootService {
-    private let runner: any ProcessRunning
-    var selectedSerial: String?
+typealias FastbootExecutableResolver = @Sendable () -> URL?
 
-    init(runner: any ProcessRunning = ProcessRunner()) {
+final class FastbootService: Sendable {
+    private let runner: any ProcessRunning
+    private let resolveExecutable: FastbootExecutableResolver
+
+    init(
+        runner: any ProcessRunning = ProcessRunner(),
+        resolveExecutable: @escaping FastbootExecutableResolver = FastbootExecutableLocator.locate
+    ) {
         self.runner = runner
+        self.resolveExecutable = resolveExecutable
     }
 
-    func listDevices() throws -> [DeviceInfo] {
-        let output = try run(arguments: ["devices"])
+    func listDevices(serial: String? = nil) throws -> [DeviceInfo] {
+        let output = try run(arguments: ["devices"], serial: serial)
         return FastbootParser.parseDevices(from: output)
     }
 
-    func getVar(_ key: String) throws -> String {
-        try run(arguments: ["getvar", key])
+    func getVar(_ key: String, serial: String? = nil) throws -> String {
+        try run(arguments: ["getvar", key], serial: serial)
     }
 
-    func reboot(_ target: FastbootRebootTarget) throws -> String {
+    func reboot(_ target: FastbootRebootTarget, serial: String? = nil) throws -> String {
         switch target {
         case .system:
-            return try run(arguments: ["reboot"])
+            return try run(arguments: ["reboot"], serial: serial)
         case .bootloader:
-            return try run(arguments: ["reboot-bootloader"])
+            return try run(arguments: ["reboot-bootloader"], serial: serial)
         case .fastbootd, .recovery:
-            return try run(arguments: ["reboot", target.rawValue])
+            return try run(arguments: ["reboot", target.rawValue], serial: serial)
         }
     }
 
-    private func run(arguments: [String]) throws -> String {
-        guard let executable = FastbootExecutableLocator.locate() else {
+    private func run(arguments: [String], serial: String? = nil) throws -> String {
+        guard let executable = resolveExecutable() else {
             throw FastbootServiceError.executableMissing
         }
 
         let effectiveArgs: [String]
-        if let serial = selectedSerial, !serial.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, serial != "-" {
+        if let serial, !serial.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, serial != "-" {
             effectiveArgs = ["-s", serial] + arguments
         } else {
             effectiveArgs = arguments
