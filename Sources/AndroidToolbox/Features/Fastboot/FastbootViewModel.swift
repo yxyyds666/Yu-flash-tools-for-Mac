@@ -8,6 +8,47 @@ struct FastbootRebootAction: Identifiable {
     let target: FastbootRebootTarget
 }
 
+enum FastbootFlashMode: String, CaseIterable, Identifiable {
+    case generic
+    case xiaomi
+    case oplusRealme
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .generic:
+            return "通用刷机"
+        case .xiaomi:
+            return "小米机型刷写"
+        case .oplusRealme:
+            return "欧加真机型刷写"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .generic:
+            return "适合标准 fastboot 分区刷写流程"
+        case .xiaomi:
+            return "面向小米 / Redmi / POCO 常见包结构"
+        case .oplusRealme:
+            return "面向 OPPO / OnePlus / realme 真机刷写流程"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .generic:
+            return "shippingbox.fill"
+        case .xiaomi:
+            return "bolt.horizontal.circle.fill"
+        case .oplusRealme:
+            return "cpu.fill"
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class FastbootViewModel {
@@ -24,6 +65,8 @@ final class FastbootViewModel {
         .init(title: "重启 Fastbootd", subtitle: "fastboot reboot fastboot", target: .fastbootd),
         .init(title: "重启 Recovery", subtitle: "fastboot reboot recovery", target: .recovery)
     ]
+
+    let flashModes = FastbootFlashMode.allCases
 
     var canExecuteCommand: Bool {
         selectedDevice.serial != "-" && selectedDevice.state == "fastboot"
