@@ -14,7 +14,6 @@ struct FastbootPanelView: View {
 
     private let fastbootAccent = Color(red: 0.875, green: 0.184, blue: 0.184)
     private let fastbootPageBackground = Color(red: 0.969, green: 0.969, blue: 0.969)
-    private let fastbootCardBackground = Color.white
     private let fastbootBorder = Color.black.opacity(0.08)
 
     private var genericFlashStep: Int {
@@ -249,25 +248,26 @@ struct FastbootPanelView: View {
     }
 
     private var genericFlashWorkspace: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 12) {
             genericStepTabs
-            HStack(alignment: .top, spacing: 22) {
+            HStack(alignment: .top, spacing: 12) {
                 genericMainFlashCard
                 genericSummaryCard
             }
         }
-        .padding(24)
-        .background(fastbootCardBackground)
+        .padding(14)
+        .background(LiquidGlassTheme.cardBackground)
+        .background(LiquidGlassTheme.cardTint)
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(fastbootBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
+                .stroke(LiquidGlassTheme.stroke, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .shadow(color: Color.black.opacity(0.08), radius: 18, y: 8)
+        .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
+        .shadow(color: LiquidGlassTheme.secondaryShadow, radius: 9, y: 4)
     }
 
     private var genericStepTabs: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             genericStepCard(index: 1, title: "选择镜像", subtitle: "选择或输入 .img 文件路径")
             genericStepCard(index: 2, title: "配置参数", subtitle: "选择或自定义刷入分区")
             genericStepCard(index: 3, title: "开始刷写", subtitle: "确认后执行 fastboot flash")
@@ -278,40 +278,41 @@ struct FastbootPanelView: View {
         let isCurrent = genericFlashStep == index
         let isDone = genericFlashStep > index
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: 9) {
             Text("\(index)")
-                .font(.headline.weight(.bold))
+                .font(.subheadline.weight(.bold))
                 .foregroundStyle(isCurrent || isDone ? .white : .secondary)
-                .frame(width: 36, height: 36)
+                .frame(width: 28, height: 28)
                 .background(isCurrent ? fastbootAccent : (isDone ? Color.black.opacity(0.82) : Color.black.opacity(0.08)))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.subheadline.weight(.bold))
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(.primary)
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, minHeight: 74, alignment: .leading)
-        .padding(.horizontal, 14)
-        .background(isCurrent ? fastbootAccent.opacity(0.08) : fastbootPageBackground)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .padding(.horizontal, 10)
+        .background(isCurrent ? AnyShapeStyle(fastbootAccent.opacity(0.08)) : LiquidGlassTheme.panelBackground)
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(isCurrent ? fastbootAccent.opacity(0.35) : fastbootBorder, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var genericMainFlashCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text("通用刷机")
-                        .font(.title2.weight(.bold))
+                        .font(.headline.weight(.bold))
                     Text("用于标准 Fastboot 分区刷写。输入镜像路径和目标分区即可执行。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -326,7 +327,7 @@ struct FastbootPanelView: View {
             genericPartitionInputRow
             genericPartitionChips
 
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Text("刷写会修改设备分区。点击开始后会先弹出确认对话框。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -335,23 +336,23 @@ struct FastbootPanelView: View {
                     showFlashConfirmation = true
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .controlSize(.regular)
                 .tint(fastbootAccent)
                 .disabled(!viewModel.canFlashGeneric || viewModel.isBusy)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
-        .padding(22)
-        .background(fastbootCardBackground)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(14)
+        .background(LiquidGlassTheme.cardBackground)
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(fastbootBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var genericImageSelectorRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Text("镜像文件")
                     .font(.caption.weight(.bold))
@@ -374,7 +375,7 @@ struct FastbootPanelView: View {
     }
 
     private var genericPartitionInputRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Text("刷入分区")
                     .font(.caption.weight(.bold))
@@ -390,7 +391,7 @@ struct FastbootPanelView: View {
     }
 
     private var genericPartitionChips: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Text("常用分区")
                     .font(.caption.weight(.bold))
@@ -399,7 +400,7 @@ struct FastbootPanelView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], spacing: 8) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 6)], spacing: 6) {
                 ForEach(viewModel.genericPartitions, id: \.self) { partition in
                     genericPartitionButton(partition)
                 }
@@ -408,10 +409,10 @@ struct FastbootPanelView: View {
     }
 
     private var genericSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("刷写摘要")
-                    .font(.title3.weight(.bold))
+                    .font(.headline.weight(.bold))
                 Text("执行前快速确认目标设备、镜像和分区。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -434,19 +435,18 @@ struct FastbootPanelView: View {
             }
             .font(.caption.monospaced())
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(10)
             .background(Color.black.opacity(0.88))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .frame(width: 360, alignment: .topLeading)
-        .frame(minHeight: 360, alignment: .topLeading)
-        .padding(22)
-        .background(fastbootPageBackground)
+        .frame(width: 330, alignment: .topLeading)
+        .padding(14)
+        .background(LiquidGlassTheme.panelBackground)
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(fastbootBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var imageFileName: String {
@@ -462,7 +462,7 @@ struct FastbootPanelView: View {
     }
 
     private func genericSummaryRow(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -472,13 +472,14 @@ struct FastbootPanelView: View {
                 .truncationMode(.middle)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(fastbootCardBackground)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(LiquidGlassTheme.cardBackground)
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(fastbootBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     @ViewBuilder
