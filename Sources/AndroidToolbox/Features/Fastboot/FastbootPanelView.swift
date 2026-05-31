@@ -6,12 +6,6 @@ struct FastbootPanelView: View {
     @State private var isFilePickerPresented = false
     @State private var showFlashConfirmation = false
 
-    private let flashColumns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
     private let fastbootAccent = Color(red: 0.875, green: 0.184, blue: 0.184)
     private let fastbootPageBackground = Color(red: 0.969, green: 0.969, blue: 0.969)
     private let fastbootBorder = Color.black.opacity(0.08)
@@ -112,59 +106,39 @@ struct FastbootPanelView: View {
 
     private var flashWorkspaceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            GroupBox("刷写模式") {
-                LazyVGrid(columns: flashColumns, spacing: 12) {
-                    ForEach(viewModel.flashModes) { mode in
-                        flashModeCard(mode)
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-
+            flashModeSegmentedControl
             flashDetailCard
         }
     }
 
-    private func flashModeCard(_ mode: FastbootFlashMode) -> some View {
-        let isSelected = selectedFlashMode == mode
-
-        return Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                selectedFlashMode = mode
-            }
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: mode.systemImage)
-                    .font(.system(size: 18, weight: .semibold))
+    private var flashModeSegmentedControl: some View {
+        HStack(spacing: 8) {
+            ForEach(viewModel.flashModes) { mode in
+                let isSelected = selectedFlashMode == mode
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        selectedFlashMode = mode
+                    }
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: mode.systemImage)
+                            .font(.system(size: 13, weight: .semibold))
+                        Text(mode.title)
+                            .font(.caption.weight(.bold))
+                            .lineLimit(1)
+                    }
                     .foregroundStyle(isSelected ? fastbootAccent : .primary)
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(mode.title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.primary)
-                    Text(mode.subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    .frame(maxWidth: .infinity, minHeight: 34)
+                    .background(isSelected ? AnyShapeStyle(fastbootAccent.opacity(0.10)) : LiquidGlassTheme.cardBackground)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(isSelected ? fastbootAccent.opacity(0.45) : LiquidGlassTheme.secondaryStroke, lineWidth: 1)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                }
+                .buttonStyle(.plain)
             }
-            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(LiquidGlassTheme.cardBackground)
-            .overlay {
-                RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
-                    .stroke(isSelected ? fastbootAccent.opacity(0.55) : LiquidGlassTheme.secondaryStroke, lineWidth: 1)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
-            .shadow(color: isSelected ? fastbootAccent.opacity(0.14) : LiquidGlassTheme.secondaryShadow, radius: 6, y: 2)
         }
-        .buttonStyle(AnimatedGlassButtonStyle())
     }
 
     private var flashDetailCard: some View {
@@ -241,10 +215,7 @@ struct FastbootPanelView: View {
     private var genericFlashWorkspace: some View {
         VStack(alignment: .leading, spacing: 12) {
             genericStepTabs
-            HStack(alignment: .top, spacing: 12) {
-                genericMainFlashCard
-                genericSummaryCard
-            }
+            genericMainFlashCard
         }
         .padding(14)
         .background(LiquidGlassTheme.cardBackground)
@@ -319,6 +290,7 @@ struct FastbootPanelView: View {
                 genericPartitionInputRow
             }
             genericPartitionMenu
+            genericCommandPreviewRow
 
             HStack(spacing: 12) {
                 Text("刷写会修改设备分区。点击开始后会先弹出确认对话框。")
@@ -342,6 +314,23 @@ struct FastbootPanelView: View {
                 .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var genericCommandPreviewRow: some View {
+        HStack(spacing: 8) {
+            Text("命令预览")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(commandPreview)
+                .font(.caption.monospaced().weight(.semibold))
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(LiquidGlassTheme.panelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private var genericImageSelectorRow: some View {
@@ -428,33 +417,6 @@ struct FastbootPanelView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private var genericSummaryCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("刷写摘要")
-                    .font(.headline.weight(.bold))
-                Text("执行前快速确认目标设备、镜像和分区。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            genericSummaryRow(title: "当前设备", value: viewModel.selectedDevice.serial == "-" ? "未选择设备" : "\(viewModel.selectedDevice.serial) / \(viewModel.selectedDevice.state)")
-            genericSummaryRow(title: "镜像文件", value: imageFileName)
-            genericSummaryRow(title: "目标分区", value: viewModel.customPartitionText.isEmpty ? "未配置" : viewModel.customPartitionText)
-            genericSummaryRow(title: "命令预览", value: commandPreview)
-
-            Spacer(minLength: 0)
-        }
-        .frame(width: 330, alignment: .topLeading)
-        .padding(14)
-        .background(LiquidGlassTheme.panelBackground)
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
     private var imageFileName: String {
         let path = viewModel.customImagePath.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !path.isEmpty else { return "未选择镜像" }
@@ -465,27 +427,6 @@ struct FastbootPanelView: View {
         let partition = viewModel.customPartitionText.trimmingCharacters(in: .whitespacesAndNewlines)
         let image = imageFileName == "未选择镜像" ? "<image>" : imageFileName
         return "fastboot flash \(partition.isEmpty ? "<partition>" : partition) \(image)"
-    }
-
-    private func genericSummaryRow(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.caption.weight(.bold))
-                .lineLimit(1)
-                .truncationMode(.middle)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(LiquidGlassTheme.cardBackground)
-        .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     @ViewBuilder
