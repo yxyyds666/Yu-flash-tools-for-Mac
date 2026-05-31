@@ -419,20 +419,6 @@ struct FastbootPanelView: View {
             genericSummaryRow(title: "命令预览", value: commandPreview)
 
             Spacer(minLength: 0)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text("ready fastboot device detected")
-                    .foregroundStyle(.green)
-                Text(commandPreview)
-                    .foregroundStyle(fastbootAccent)
-                Text("waiting for confirmation...")
-                    .foregroundStyle(.secondary)
-            }
-            .font(.caption.monospaced())
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(10)
-            .background(Color.black.opacity(0.88))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .frame(width: 330, alignment: .topLeading)
         .padding(14)
