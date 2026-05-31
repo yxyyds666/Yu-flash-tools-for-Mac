@@ -166,11 +166,20 @@ final class FastbootViewModel {
     func flashGeneric(imagePath: String, partition: String) {
         guard ensureDeviceReady() else { return }
 
+        switch GenericFastbootFlashValidation.validate(imagePath: imagePath, partition: partition) {
+        case .valid:
+            break
+        case .invalid(let message):
+            appendLog("[刷写] 失败：\(message)")
+            return
+        }
+
         Task {
             isBusy = true
             defer { isBusy = false }
             do {
                 let url = URL(fileURLWithPath: imagePath)
+                appendLog("[刷写] 开始\n设备：\(selectedDevice.serial)\n分区：\(partition)\n镜像：\(imagePath)")
                 let result = try service.flash(partition: partition, image: url, serial: selectedFastbootSerial)
                 appendLog("[刷写] 分区「\(partition)」刷入完成\n\(result)")
             } catch {

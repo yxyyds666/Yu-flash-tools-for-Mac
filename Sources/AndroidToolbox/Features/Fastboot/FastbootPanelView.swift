@@ -425,8 +425,9 @@ struct FastbootPanelView: View {
 
     private var commandPreview: String {
         let partition = viewModel.customPartitionText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let image = imageFileName == "未选择镜像" ? "<image>" : imageFileName
-        return "fastboot flash \(partition.isEmpty ? "<partition>" : partition) \(image)"
+        let image = viewModel.customImagePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        let serial = viewModel.selectedDevice.serial == "-" ? "<serial>" : viewModel.selectedDevice.serial
+        return "fastboot -s \(serial) flash \(partition.isEmpty ? "<partition>" : partition) \(image.isEmpty ? "<image>" : image)"
     }
 
     @ViewBuilder

@@ -5,9 +5,11 @@ import Testing
 private final class FastbootMockProcessRunner: ProcessRunning, @unchecked Sendable {
     var nextResult: ProcessRunnerResult = .init(output: "", exitCode: 0)
     private(set) var capturedArguments: [String] = []
+    private(set) var capturedTimeout: TimeInterval?
 
     func run(executable: URL, arguments: [String], timeout: TimeInterval) throws -> ProcessRunnerResult {
         capturedArguments = arguments
+        capturedTimeout = timeout
         return nextResult
     }
 }
@@ -21,4 +23,15 @@ func fastbootService_listDevices_withExplicitSerial_injectsDashS() throws {
     _ = try service.listDevices(serial: "device-1")
 
     #expect(runner.capturedArguments == ["-s", "device-1", "devices"])
+}
+
+@Test
+func fastbootService_flash_usesLongTimeoutAndExplicitSerial() throws {
+    let runner = FastbootMockProcessRunner()
+    let service = FastbootService(runner: runner, resolveExecutable: { URL(fileURLWithPath: "/tmp/fastboot") })
+
+    _ = try service.flash(partition: "boot", image: URL(fileURLWithPath: "/tmp/boot.img"), serial: "device-1")
+
+    #expect(runner.capturedArguments == ["-s", "device-1", "flash", "boot", "/tmp/boot.img"])
+    #expect(runner.capturedTimeout == 300)
 }

@@ -5,6 +5,17 @@ enum FastbootServiceError: Error {
     case commandFailed(String)
 }
 
+extension FastbootServiceError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .executableMissing:
+            return "找不到 fastboot 可执行文件"
+        case .commandFailed(let output):
+            return output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "fastboot 命令执行失败" : output
+        }
+    }
+}
+
 enum FastbootRebootTarget: String {
     case system
     case bootloader
@@ -36,7 +47,7 @@ final class FastbootService: Sendable {
     }
 
     func flash(partition: String, image: URL, serial: String? = nil) throws -> String {
-        try run(arguments: ["flash", partition, image.path], serial: serial)
+        try run(arguments: ["flash", partition, image.path], serial: serial, timeout: 300)
     }
 
     func reboot(_ target: FastbootRebootTarget, serial: String? = nil) throws -> String {
@@ -50,7 +61,7 @@ final class FastbootService: Sendable {
         }
     }
 
-    private func run(arguments: [String], serial: String? = nil) throws -> String {
+    private func run(arguments: [String], serial: String? = nil, timeout: TimeInterval = 20) throws -> String {
         guard let executable = resolveExecutable() else {
             throw FastbootServiceError.executableMissing
         }
@@ -62,7 +73,7 @@ final class FastbootService: Sendable {
             effectiveArgs = arguments
         }
 
-        let result = try runner.run(executable: executable, arguments: effectiveArgs, timeout: 20)
+        let result = try runner.run(executable: executable, arguments: effectiveArgs, timeout: timeout)
         guard result.exitCode == 0 else {
             throw FastbootServiceError.commandFailed(result.output)
         }
