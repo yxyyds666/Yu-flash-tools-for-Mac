@@ -12,6 +12,16 @@ struct FastbootPanelView: View {
         GridItem(.flexible(), spacing: 12)
     ]
 
+    private var genericFlashStep: Int {
+        if viewModel.customImagePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return 1
+        }
+        if viewModel.customPartitionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return 2
+        }
+        return 3
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             headerRow
