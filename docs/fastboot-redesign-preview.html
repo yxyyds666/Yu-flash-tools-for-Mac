@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fastboot 通用刷机界面预览</title>
+  <style>
+    :root {
+      --bg: #f7f7f7;
+      --card: #ffffff;
+      --text: #202124;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --soft-line: #f0f1f3;
+      --red: #df2f2f;
+      --red-dark: #bf2424;
+      --red-soft: #fff0f0;
+      --green: #16a34a;
+      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+
+    .app {
+      width: 1380px;
+      height: 960px;
+      margin: 0 auto;
+      padding: 28px;
+      background: var(--bg);
+    }
+
+    .panel {
+      height: 100%;
+      border-radius: 28px;
+      background: #fbfbfb;
+      border: 1px solid #ececec;
+      padding: 28px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 38px;
+      letter-spacing: -0.03em;
+      font-weight: 760;
+    }
+
+    .title-block p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green);
+      background: #eefbf2;
+      border: 1px solid #d4f4dd;
+      padding: 9px 13px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      cursor: default;
+    }
+
+    .secondary-btn {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 11px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: #111827;
+      font-size: 13px;
+      font-weight: 650;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 760;
+      color: #111827;
+    }
+
+    .reboot-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .reboot-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .reboot-action {
+      height: 58px;
+      border-radius: 15px;
+      background: #fafafa;
+      border: 1px solid var(--soft-line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 720;
+      color: #1f2937;
+    }
+
+    .reboot-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .mode-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 96px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .mode-card.active {
+      border-color: rgba(223, 47, 47, 0.42);
+      box-shadow: 0 8px 24px rgba(223, 47, 47, 0.10);
+    }
+
+    .mode-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .mode-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: var(--red-soft);
+      color: var(--red);
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .mode-name {
+      font-size: 16px;
+      font-weight: 760;
+      margin-bottom: 4px;
+    }
+
+    .mode-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .flash-workspace {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 26px;
+    }
+
+    .step-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .step {
+      height: 78px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: #fbfbfb;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .step.current {
+      background: var(--red-soft);
+      border-color: rgba(223, 47, 47, 0.38);
+    }
+
+    .step.done {
+      background: #f8fafc;
+      border-color: #dfe5ec;
+    }
+
+    .step-index {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: #e5e7eb;
+      color: #4b5563;
+      display: grid;
+      place-items: center;
+      font-weight: 760;
+    }
+
+    .step.current .step-index {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .step.done .step-index {
+      background: #111827;
+      color: #fff;
+    }
+
+    .step-title {
+      font-size: 15px;
+      font-weight: 760;
+    }
+
+    .step-note {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .flash-content {
+      display: grid;
+      grid-template-columns: 1.45fr 0.9fr;
+      gap: 26px;
+      min-height: 0;
+    }
+
+    .main-card,
+    .side-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 24px;
+    }
+
+    .main-card {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .card-heading h2 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .card-heading p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .device-pill {
+      white-space: nowrap;
+      border-radius: 999px;
+      background: #f0fdf4;
+      border: 1px solid #dcfce7;
+      color: #15803d;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 720;
+      color: #374151;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .file-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+    }
+
+    .input,
+    .path-display {
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid #d8dde5;
+      background: #fff;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: #111827;
+      box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.02);
+    }
+
+    .path-display {
+      color: #334155;
+      font-family: "SF Mono", Consolas, monospace;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .browse-btn {
+      min-width: 118px;
+      height: 48px;
+      border-radius: 14px;
+      border: 1px solid #cfd6df;
+      background: #f8fafc;
+      color: #111827;
+      font-weight: 760;
+    }
+
+    .partition-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .partition-chip {
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #f9fafb;
+      display: grid;
+      place-items: center;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 740;
+      font-family: "SF Mono", Consolas, monospace;
+    }
+
+    .partition-chip.active {
+      background: var(--red-soft);
+      color: var(--red-dark);
+      border-color: rgba(223, 47, 47, 0.36);
+    }
+
+    .action-row {
+      margin-top: auto;
+      padding-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .warning {
+      color: #6b7280;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .flash-btn {
+      height: 52px;
+      min-width: 160px;
+      border-radius: 16px;
+      background: var(--red);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      box-shadow: 0 10px 20px rgba(223, 47, 47, 0.22);
+    }
+
+    .side-card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #fcfcfc;
+    }
+
+    .summary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .summary-item {
+      border-radius: 15px;
+      background: #fff;
+      border: 1px solid var(--soft-line);
+      padding: 14px;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      color: #111827;
+      font-size: 14px;
+      font-weight: 760;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .terminal {
+      margin-top: auto;
+      border-radius: 16px;
+      background: #111827;
+      color: #d1d5db;
+      padding: 16px;
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      min-height: 110px;
+    }
+
+    .terminal .red { color: #fca5a5; }
+    .terminal .green { color: #86efac; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <header class="header">
+        <div class="title-block">
+          <h1>Fastboot</h1>
+          <p>设备重启与通用分区刷写。保留现有顶部结构，只重做通用刷机工作区。</p>
+        </div>
+        <div class="header-actions">
+          <div class="status"><span class="dot"></span>Fastboot 已就绪</div>
+          <button class="secondary-btn">刷新设备</button>
+        </div>
+      </header>
+
+      <section class="reboot-card">
+        <h3 class="section-title">快速重启</h3>
+        <div class="reboot-grid">
+          <div class="reboot-action"><span class="reboot-icon">P</span>重启系统</div>
+          <div class="reboot-action"><span class="reboot-icon">B</span>重启 Bootloader</div>
+          <div class="reboot-action"><span class="reboot-icon">F</span>重启 Fastbootd</div>
+          <div class="reboot-action"><span class="reboot-icon">R</span>重启 Recovery</div>
+        </div>
+      </section>
+
+      <section class="mode-tabs">
+        <div class="mode-card active">
+          <div class="mode-top"><div class="mode-icon">G</div><strong>已选中</strong></div>
+          <div class="mode-name">通用刷机</div>
+          <div class="mode-desc">选择镜像，输入或选择目标分区，然后执行 fastboot flash。</div>
+        </div>
+        <div class="mode-card">
+          <div class="mode-top"><div class="mode-icon">M</div></div>
+          <div class="mode-name">小米机型刷写</div>
+          <div class="mode-desc">保留入口，后续接入 Fastboot ROM 流程。</div>
+        </div>
+        <div class="mode-card">
+          <div class="mode-top"><div class="mode-icon">O</div></div>
+          <div class="mode-name">欧加真机型刷写</div>
+          <div class="mode-desc">保留入口，后续接入 payload 或机型包流程。</div>
+        </div>
+      </section>
+
+      <section class="flash-workspace">
+        <div class="step-tabs">
+          <div class="step done">
+            <div class="step-index">1</div>
+            <div>
+              <div class="step-title">选择镜像</div>
+              <div class="step-note">选择或输入 .img 文件路径</div>
+            </div>
+          </div>
+          <div class="step current">
+            <div class="step-index">2</div>
+            <div>
+              <div class="step-title">配置参数</div>
+              <div class="step-note">选择或自定义刷入分区</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-index">3</div>
+            <div>
+              <div class="step-title">开始刷写</div>
+              <div class="step-note">确认后执行 fastboot flash</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flash-content">
+          <div class="main-card">
+            <div class="card-heading">
+              <div>
+                <h2>通用刷机</h2>
+                <p>用于标准 Fastboot 分区刷写。输入镜像路径和目标分区即可执行。</p>
+              </div>
+              <div class="device-pill">设备：ABC12345</div>
+            </div>
+
+            <div class="field-group">
+              <div class="label-row">
+                <span>镜像文件</span>
+                <span class="hint">支持选择文件或手动输入路径</span>
+              </div>
+              <div class="file-row">
+                <div class="path-display">/Users/yuxi/Downloads/boot.img</div>
+                <button class="browse-btn">浏览...</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="label-row">
+                <span>刷入分区</span>
+                <span class="hint">可直接输入自定义分区名</span>
+              </div>
+              <div class="input">boot</div>
+            </div>
+
+            <div class="field-group">
+              <div class="label-row">
+                <span>常用分区</span>
+                <span class="hint">点击后填入上方分区输入框</span>
+              </div>
+              <div class="partition-grid">
+                <div class="partition-chip active">boot</div>
+                <div class="partition-chip">vendor_boot</div>
+                <div class="partition-chip">dtbo</div>
+                <div class="partition-chip">vbmeta</div>
+                <div class="partition-chip">super</div>
+                <div class="partition-chip">recovery</div>
+                <div class="partition-chip">init_boot</div>
+                <div class="partition-chip">vendor_kernel_boot</div>
+                <div class="partition-chip">system</div>
+                <div class="partition-chip">odm</div>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <div class="warning">刷写会修改设备分区。点击开始后先弹出确认对话框，再执行 fastboot flash &lt;partition&gt; &lt;image&gt;。</div>
+              <button class="flash-btn">开始刷写</button>
+            </div>
+          </div>
+
+          <aside class="side-card">
+            <div class="card-heading">
+              <div>
+                <h2>刷写摘要</h2>
+                <p>执行前快速确认目标设备、镜像和分区。</p>
+              </div>
+            </div>
+
+            <div class="summary-list">
+              <div class="summary-item">
+                <div class="summary-label">当前设备</div>
+                <div class="summary-value">ABC12345 / fastboot</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">镜像文件</div>
+                <div class="summary-value">boot.img</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">目标分区</div>
+                <div class="summary-value">boot</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-label">命令预览</div>
+                <div class="summary-value">fastboot flash boot boot.img</div>
+              </div>
+            </div>
+
+            <div class="terminal">
+              <div><span class="green">ready</span> fastboot device detected</div>
+              <div><span class="red">cmd</span> fastboot -s ABC12345 flash boot boot.img</div>
+              <div>waiting for confirmation...</div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
