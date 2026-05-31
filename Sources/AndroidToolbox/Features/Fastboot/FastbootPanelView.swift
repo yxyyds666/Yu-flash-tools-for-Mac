@@ -318,7 +318,7 @@ struct FastbootPanelView: View {
                 genericImageSelectorRow
                 genericPartitionInputRow
             }
-            genericPartitionChips
+            genericPartitionMenu
 
             HStack(spacing: 12) {
                 Text("刷写会修改设备分区。点击开始后会先弹出确认对话框。")
@@ -385,22 +385,47 @@ struct FastbootPanelView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
-    private var genericPartitionChips: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack {
+    private var genericPartitionMenu: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text("常用分区")
                     .font(.caption.weight(.bold))
-                Spacer()
-                Text("点击后填入上方输入框")
+                Text("选择后自动填入上方分区输入框")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 6)], spacing: 6) {
+
+            Spacer()
+
+            Menu {
                 ForEach(viewModel.genericPartitions, id: \.self) { partition in
-                    genericPartitionButton(partition)
+                    Button(partition) {
+                        viewModel.customPartitionText = partition
+                    }
                 }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(viewModel.genericPartitions.contains(viewModel.customPartitionText) ? viewModel.customPartitionText : "选择常用分区")
+                        .font(.caption.weight(.bold))
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.bold))
+                }
+                .frame(minWidth: 138, minHeight: 30)
+                .padding(.horizontal, 10)
+                .background(LiquidGlassTheme.cardBackground)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(fastbootBorder, lineWidth: 1)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
+            .menuStyle(.borderlessButton)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(LiquidGlassTheme.panelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var genericSummaryCard: some View {
