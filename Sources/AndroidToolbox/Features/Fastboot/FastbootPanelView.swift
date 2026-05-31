@@ -27,13 +27,13 @@ struct FastbootPanelView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             headerRow
             rebootSection
             flashWorkspaceSection
             Spacer(minLength: 0)
         }
-        .padding(20)
+        .padding(16)
         .background(LiquidGlassTheme.panelBackground)
         .overlay {
             RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
@@ -111,7 +111,7 @@ struct FastbootPanelView: View {
     }
 
     private var flashWorkspaceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             GroupBox("刷写模式") {
                 LazyVGrid(columns: flashColumns, spacing: 12) {
                     ForEach(viewModel.flashModes) { mode in
@@ -133,45 +133,36 @@ struct FastbootPanelView: View {
                 selectedFlashMode = mode
             }
         } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    Image(systemName: mode.systemImage)
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(isSelected ? .orange : .primary)
-                    Spacer()
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    }
-                }
-
+            HStack(spacing: 10) {
+                Image(systemName: mode.systemImage)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(isSelected ? fastbootAccent : .primary)
+                    .frame(width: 24)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(mode.title)
-                        .font(.headline)
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(.primary)
                     Text(mode.subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                 }
-
-                Text("配置入口")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(isSelected ? .orange : .secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(LiquidGlassTheme.panelBackground)
-                    .clipShape(Capsule())
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
             }
-            .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
-            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(LiquidGlassTheme.cardBackground)
             .overlay {
                 RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
-                    .stroke(isSelected ? Color.orange.opacity(0.55) : LiquidGlassTheme.secondaryStroke, lineWidth: 1)
+                    .stroke(isSelected ? fastbootAccent.opacity(0.55) : LiquidGlassTheme.secondaryStroke, lineWidth: 1)
             }
             .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
-            .shadow(color: isSelected ? Color.orange.opacity(0.16) : LiquidGlassTheme.secondaryShadow, radius: 9, y: 3)
+            .shadow(color: isSelected ? fastbootAccent.opacity(0.14) : LiquidGlassTheme.secondaryShadow, radius: 6, y: 2)
         }
         .buttonStyle(AnimatedGlassButtonStyle())
     }
@@ -297,7 +288,7 @@ struct FastbootPanelView: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .padding(.horizontal, 10)
         .background(isCurrent ? AnyShapeStyle(fastbootAccent.opacity(0.08)) : LiquidGlassTheme.panelBackground)
         .overlay {
@@ -323,8 +314,10 @@ struct FastbootPanelView: View {
                     .foregroundStyle(viewModel.canExecuteCommand ? .green : fastbootAccent)
             }
 
-            genericImageSelectorRow
-            genericPartitionInputRow
+            HStack(alignment: .top, spacing: 12) {
+                genericImageSelectorRow
+                genericPartitionInputRow
+            }
             genericPartitionChips
 
             HStack(spacing: 12) {
@@ -372,6 +365,7 @@ struct FastbootPanelView: View {
                 .controlSize(.regular)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var genericPartitionInputRow: some View {
@@ -388,6 +382,7 @@ struct FastbootPanelView: View {
                 .textFieldStyle(.roundedBorder)
                 .font(.caption.weight(.semibold))
         }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var genericPartitionChips: some View {
