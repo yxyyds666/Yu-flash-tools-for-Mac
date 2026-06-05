@@ -4,7 +4,7 @@ struct GenericFastbootFlashCardView: View {
     @Bindable var viewModel: FastbootViewModel
     @Binding var isFilePickerPresented: Bool
     @Binding var showFlashConfirmation: Bool
-    @State private var showCustomPartitionSheet = false
+    @State private var showCustomPartitionInput = false
     @State private var customPartitionInput = ""
 
     private var currentStep: Int {
@@ -161,7 +161,7 @@ struct GenericFastbootFlashCardView: View {
                 Divider()
                 Button("✏️ 输入自定义分区名...") {
                     customPartitionInput = ""
-                    showCustomPartitionSheet = true
+                    showCustomPartitionInput = true
                 }
             } label: {
                 HStack(spacing: 8) {
@@ -184,6 +184,25 @@ struct GenericFastbootFlashCardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .menuStyle(.borderlessButton)
+
+            if showCustomPartitionInput {
+                HStack(spacing: 8) {
+                    TextField("输入自定义分区名", text: $customPartitionInput)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.caption)
+                    Button("确认") {
+                        let trimmed = customPartitionInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            viewModel.customPartitionText = trimmed
+                        }
+                        showCustomPartitionInput = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(Color.red)
+                    .disabled(customPartitionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
@@ -193,37 +212,6 @@ struct GenericFastbootFlashCardView: View {
                 .stroke(LiquidGlassTheme.secondaryStroke, lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .sheet(isPresented: $showCustomPartitionSheet) {
-            customPartitionSheet
-        }
-    }
-
-    private var customPartitionSheet: some View {
-        VStack(spacing: 16) {
-            Text("输入自定义分区名")
-                .font(.headline)
-            TextField("例如：my_partition", text: $customPartitionInput)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 250)
-            HStack(spacing: 12) {
-                Button("取消") {
-                    showCustomPartitionSheet = false
-                }
-                .buttonStyle(.bordered)
-                Button("确认") {
-                    let trimmed = customPartitionInput.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        viewModel.customPartitionText = trimmed
-                    }
-                    showCustomPartitionSheet = false
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Color.red)
-                .disabled(customPartitionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(20)
-        .frame(width: 320, height: 160)
     }
 
     private var commandPreviewRow: some View {
