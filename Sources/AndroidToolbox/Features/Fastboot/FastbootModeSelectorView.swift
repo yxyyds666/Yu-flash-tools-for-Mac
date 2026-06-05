@@ -4,7 +4,7 @@ struct FastbootModeSelectorView: View {
     let modes: [FastbootFlashMode]
     @Binding var selectedMode: FastbootFlashMode
     var body: some View {
-        HStack(spacing: 8) {
+        VStack(spacing: 6) {
             ForEach(modes) { mode in
                 let isSelected = selectedMode == mode
                 Button {
@@ -20,7 +20,8 @@ struct FastbootModeSelectorView: View {
                             .lineLimit(1)
                     }
                     .foregroundStyle(isSelected ? Color.red : .primary)
-                    .frame(maxWidth: .infinity, minHeight: 34)
+                    .frame(maxWidth: .infinity, minHeight: 40)
+                    .padding(.horizontal, 10)
                     .background(isSelected ? AnyShapeStyle(Color.red.opacity(0.10)) : LiquidGlassTheme.cardBackground)
                     .overlay {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -31,5 +32,6 @@ struct FastbootModeSelectorView: View {
                 .buttonStyle(.plain)
             }
         }
+        .frame(width: 140)
     }
 }

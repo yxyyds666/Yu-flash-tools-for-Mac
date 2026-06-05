@@ -9,8 +9,15 @@ struct FastbootPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             headerRow
-            rebootSection
-            flashDetailCard
+            HStack(alignment: .top, spacing: 12) {
+                VStack(spacing: 10) {
+                    rebootSection
+                    flashDetailCard
+                }
+                .frame(maxWidth: .infinity)
+
+                FastbootModeSelectorView(modes: viewModel.flashModes, selectedMode: $selectedFlashMode)
+            }
             Spacer(minLength: 0)
         }
         .padding(20)
@@ -52,8 +59,6 @@ struct FastbootPanelView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
-
-            FastbootModeSelectorView(modes: viewModel.flashModes, selectedMode: $selectedFlashMode)
         }
     }
 
