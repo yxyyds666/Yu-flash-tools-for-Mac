@@ -2,7 +2,7 @@ import Foundation
 
 enum ADBExecutableLocator {
     static func locate() -> URL? {
-        if let bundled = Bundle.module.url(forResource: "adb", withExtension: nil, subdirectory: "Tools") {
+        if let bundled = Bundle.main.url(forResource: "adb", withExtension: nil, subdirectory: "Tools") {
             return bundled
         }
 

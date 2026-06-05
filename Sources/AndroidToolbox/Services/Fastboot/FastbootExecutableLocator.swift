@@ -2,7 +2,7 @@ import Foundation
 
 enum FastbootExecutableLocator {
     static func locate() -> URL? {
-        if let bundled = Bundle.module.url(forResource: "fastboot", withExtension: nil, subdirectory: "Tools") {
+        if let bundled = Bundle.main.url(forResource: "fastboot", withExtension: nil, subdirectory: "Tools") {
             return bundled
         }
 

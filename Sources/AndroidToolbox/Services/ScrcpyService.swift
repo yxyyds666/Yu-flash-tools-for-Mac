@@ -14,7 +14,7 @@ final class ScrcpyService {
     }
 
     func locate() -> URL? {
-        if let bundled = Bundle.module.url(forResource: "scrcpy", withExtension: nil, subdirectory: "Tools") {
+        if let bundled = Bundle.main.url(forResource: "scrcpy", withExtension: nil, subdirectory: "Tools") {
             return bundled
         }
 
@@ -106,7 +106,7 @@ final class ScrcpyService {
         process.executableURL = executable
         process.arguments = args
 
-        if let bundledServer = Bundle.module.url(forResource: "scrcpy-server", withExtension: nil, subdirectory: "Tools") {
+        if let bundledServer = Bundle.main.url(forResource: "scrcpy-server", withExtension: nil, subdirectory: "Tools") {
             var env = ProcessInfo.processInfo.environment
             env["SCRCPY_SERVER_PATH"] = bundledServer.path
             process.environment = env

@@ -2,7 +2,7 @@ import Foundation
 
 enum EDLExecutableLocator {
     static func locate() -> URL? {
-        if let bundled = Bundle.module.url(forResource: "edl", withExtension: nil, subdirectory: "Tools") {
+        if let bundled = Bundle.main.url(forResource: "edl", withExtension: nil, subdirectory: "Tools") {
             return bundled
         }
 

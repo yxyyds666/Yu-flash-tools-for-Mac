@@ -239,7 +239,7 @@ struct ADBPanelView: View {
 
     @ViewBuilder
     private var scrcpyIconImage: some View {
-        if let url = Bundle.module.url(forResource: "scrcpy", withExtension: "svg", subdirectory: "Resources"),
+        if let url = Bundle.main.url(forResource: "scrcpy", withExtension: "svg", subdirectory: "Resources"),
            let image = NSImage(contentsOf: url) {
             Image(nsImage: image)
                 .resizable()
