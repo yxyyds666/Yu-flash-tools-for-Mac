@@ -106,38 +106,8 @@ struct FastbootPanelView: View {
 
     private var flashWorkspaceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            flashModeSegmentedControl
+            FastbootModeSelectorView(modes: viewModel.flashModes, selectedMode: $selectedFlashMode, accent: fastbootAccent)
             flashDetailCard
-        }
-    }
-
-    private var flashModeSegmentedControl: some View {
-        HStack(spacing: 8) {
-            ForEach(viewModel.flashModes) { mode in
-                let isSelected = selectedFlashMode == mode
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        selectedFlashMode = mode
-                    }
-                } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: mode.systemImage)
-                            .font(.system(size: 13, weight: .semibold))
-                        Text(mode.title)
-                            .font(.caption.weight(.bold))
-                            .lineLimit(1)
-                    }
-                    .foregroundStyle(isSelected ? fastbootAccent : .primary)
-                    .frame(maxWidth: .infinity, minHeight: 34)
-                    .background(isSelected ? AnyShapeStyle(fastbootAccent.opacity(0.10)) : LiquidGlassTheme.cardBackground)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(isSelected ? fastbootAccent.opacity(0.45) : LiquidGlassTheme.secondaryStroke, lineWidth: 1)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
         }
     }
 
