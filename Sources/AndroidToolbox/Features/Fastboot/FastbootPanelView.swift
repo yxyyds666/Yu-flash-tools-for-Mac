@@ -266,7 +266,7 @@ struct FastbootPanelView: View {
             Text("命令预览")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.secondary)
-            Text(commandPreview)
+            Text(viewModel.genericFlashCommandPreview)
                 .font(.caption.monospaced().weight(.semibold))
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -360,19 +360,6 @@ struct FastbootPanelView: View {
         .padding(.vertical, 8)
         .background(LiquidGlassTheme.panelBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    private var imageFileName: String {
-        let path = viewModel.customImagePath.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !path.isEmpty else { return "未选择镜像" }
-        return URL(fileURLWithPath: path).lastPathComponent
-    }
-
-    private var commandPreview: String {
-        let partition = viewModel.customPartitionText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let image = viewModel.customImagePath.trimmingCharacters(in: .whitespacesAndNewlines)
-        let serial = viewModel.selectedDevice.serial == "-" ? "<serial>" : viewModel.selectedDevice.serial
-        return "fastboot -s \(serial) flash \(partition.isEmpty ? "<partition>" : partition) \(image.isEmpty ? "<image>" : image)"
     }
 
     @ViewBuilder

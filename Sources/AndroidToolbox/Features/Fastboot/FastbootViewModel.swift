@@ -74,6 +74,19 @@ final class FastbootViewModel {
             && canExecuteCommand
     }
 
+    var genericFlashImageFileName: String {
+        let path = customImagePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { return "未选择镜像" }
+        return URL(fileURLWithPath: path).lastPathComponent
+    }
+
+    var genericFlashCommandPreview: String {
+        let partition = customPartitionText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let image = customImagePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        let serial = selectedDevice.serial == "-" ? "<serial>" : selectedDevice.serial
+        return "fastboot -s \(serial) flash \(partition.isEmpty ? "<partition>" : partition) \(image.isEmpty ? "<image>" : image)"
+    }
+
     let rebootActions: [FastbootRebootAction] = [
         .init(title: "重启系统", subtitle: "fastboot reboot", target: .system),
         .init(title: "重启 Bootloader", subtitle: "fastboot reboot-bootloader", target: .bootloader),
