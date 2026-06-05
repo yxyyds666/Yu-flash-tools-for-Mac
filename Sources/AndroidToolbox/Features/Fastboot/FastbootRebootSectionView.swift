@@ -7,7 +7,7 @@ struct FastbootRebootSectionView: View {
     let onReboot: (FastbootRebootAction) -> Void
 
     var body: some View {
-        GroupBox("快速重启") {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 ForEach(actions) { action in
                     Button {
@@ -16,10 +16,8 @@ struct FastbootRebootSectionView: View {
                         HStack(spacing: 8) {
                             Image(systemName: iconName(for: action.target))
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.primary)
                             Text(action.title)
                                 .font(.subheadline.weight(.bold))
-                                .foregroundStyle(.primary)
                                 .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
@@ -37,8 +35,22 @@ struct FastbootRebootSectionView: View {
                     .disabled(!canExecuteCommand || isBusy)
                 }
             }
-            .padding(.vertical, 4)
         }
+        .padding(14)
+        .background(LiquidGlassTheme.cardBackground)
+        .background(LiquidGlassTheme.cardTint)
+        .overlay(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
+                .fill(LiquidGlassTheme.glow)
+                .opacity(0.28)
+                .padding(1)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
+                .stroke(LiquidGlassTheme.stroke, lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
+        .shadow(color: LiquidGlassTheme.shadow, radius: 12, y: 5)
     }
 
     private func iconName(for target: FastbootRebootTarget) -> String {
