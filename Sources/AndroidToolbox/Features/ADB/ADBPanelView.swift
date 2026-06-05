@@ -160,15 +160,15 @@ struct ADBPanelView: View {
     }
 
     private var scrcpySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             scrcpyHeroCard
 
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
                 scrcpyQualityCard
                 scrcpyOptionsCard
             }
 
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
                 scrcpyVirtualDisplayCard
                 scrcpyFloatingShortcutCard
             }
@@ -177,45 +177,50 @@ struct ADBPanelView: View {
     }
 
     private var scrcpyHeroCard: some View {
-        VStack(spacing: 14) {
+        HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color.white.opacity(0.94))
-                    .frame(width: 74, height: 74)
-                    .shadow(color: Color.black.opacity(0.14), radius: 18, y: 8)
+                    .frame(width: 44, height: 44)
+                    .shadow(color: Color.black.opacity(0.14), radius: 10, y: 4)
 
                 scrcpyIconImage
-                    .frame(width: 50, height: 50)
+                    .frame(width: 30, height: 30)
             }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("scrcpy 投屏控制台")
+                    .font(.title3.bold())
+                Text("低延迟 Android 投屏，适合演示、录制、调试和日常控制。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
 
             VStack(spacing: 4) {
-                Text("scrcpy 投屏控制台")
-                    .font(.system(size: 31, weight: .bold, design: .rounded))
-                Text("低延迟 Android 投屏，适合演示、录制、调试和日常控制。")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-
-            Button {
-                if viewModel.isScrcpyRunning {
-                    viewModel.stopScrcpy()
-                } else {
-                    viewModel.startScrcpy()
+                Button {
+                    if viewModel.isScrcpyRunning {
+                        viewModel.stopScrcpy()
+                    } else {
+                        viewModel.startScrcpy()
+                    }
+                } label: {
+                    Label(viewModel.isScrcpyRunning ? "停止投屏" : "启动投屏", systemImage: viewModel.isScrcpyRunning ? "stop.fill" : "play.fill")
+                        .frame(width: 120)
                 }
-            } label: {
-                Label(viewModel.isScrcpyRunning ? "停止投屏" : "启动投屏", systemImage: viewModel.isScrcpyRunning ? "stop.fill" : "play.fill")
-                    .frame(width: 160)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(viewModel.isScrcpyRunning ? .gray : .red)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .tint(viewModel.isScrcpyRunning ? .gray : .red)
 
-            Label(viewModel.isScrcpyRunning ? "状态：投屏中" : "状态：未启动", systemImage: viewModel.isScrcpyRunning ? "checkmark.circle.fill" : "circle.dashed")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(viewModel.isScrcpyRunning ? .green : .secondary)
+                Label(viewModel.isScrcpyRunning ? "状态：投屏中" : "状态：未启动", systemImage: viewModel.isScrcpyRunning ? "checkmark.circle.fill" : "circle.dashed")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(viewModel.isScrcpyRunning ? .green : .secondary)
+            }
         }
         .frame(maxWidth: .infinity)
-        .padding(26)
+        .padding(14)
         .background(LiquidGlassTheme.cardBackground)
         .background(LiquidGlassTheme.cardTint)
         .overlay(alignment: .topLeading) {
@@ -278,7 +283,7 @@ struct ADBPanelView: View {
             HStack(spacing: 14) {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(LinearGradient(colors: [Color.red.opacity(0.90), Color.orange.opacity(0.70)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 116, height: 154)
+                    .frame(width: 100, height: 132)
                     .overlay {
                         VStack(spacing: 6) {
                             Image(systemName: "iphone")
@@ -322,7 +327,7 @@ struct ADBPanelView: View {
     }
 
     private func scrcpyCard<Content: View>(title: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.headline)
@@ -334,7 +339,7 @@ struct ADBPanelView: View {
             content()
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .padding(16)
+        .padding(12)
         .background(LiquidGlassTheme.cardBackground)
         .overlay {
             RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
@@ -355,7 +360,7 @@ struct ADBPanelView: View {
     }
 
     private func scrcpySliderRow(title: String, subtitle: String, value: Binding<Int>, range: ClosedRange<Double>, step: Double, suffix: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
