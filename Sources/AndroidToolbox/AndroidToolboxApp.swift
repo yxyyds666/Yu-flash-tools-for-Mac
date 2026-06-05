@@ -3,7 +3,7 @@ import AppKit
 
 enum AppIconProvider {
     static func circularIcon() -> NSImage? {
-        guard let url = Bundle.module.url(forResource: "app-icon", withExtension: "png"),
+        guard let url = Bundle.main.url(forResource: "app-icon", withExtension: "png"),
               let source = NSImage(contentsOf: url) else {
             return nil
         }
