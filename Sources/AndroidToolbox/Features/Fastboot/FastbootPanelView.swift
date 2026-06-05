@@ -70,37 +70,12 @@ struct FastbootPanelView: View {
     }
 
     private var rebootSection: some View {
-        GroupBox("快速重启") {
-            HStack(spacing: 10) {
-                ForEach(viewModel.rebootActions) { action in
-                    Button {
-                        viewModel.reboot(to: action.target, label: action.title)
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: iconName(for: action.target))
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.primary)
-                            Text(action.title)
-                                .font(.subheadline.weight(.bold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .center)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(LiquidGlassTheme.cardBackground)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
-                                .stroke(LiquidGlassTheme.stroke, lineWidth: 1)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
-                        .shadow(color: LiquidGlassTheme.shadow, radius: 8, y: 2)
-                    }
-                    .buttonStyle(AnimatedGlassButtonStyle())
-                    .disabled(!viewModel.canExecuteCommand || viewModel.isBusy)
-                }
-            }
-            .padding(.vertical, 4)
+        FastbootRebootSectionView(
+            actions: viewModel.rebootActions,
+            canExecuteCommand: viewModel.canExecuteCommand,
+            isBusy: viewModel.isBusy
+        ) { action in
+            viewModel.reboot(to: action.target, label: action.title)
         }
     }
 
@@ -604,16 +579,4 @@ struct FastbootPanelView: View {
         }
     }
 
-    private func iconName(for target: FastbootRebootTarget) -> String {
-        switch target {
-        case .system:
-            return "power"
-        case .bootloader:
-            return "gearshape.2.fill"
-        case .fastbootd:
-            return "hare.fill"
-        case .recovery:
-            return "cross.case.fill"
-        }
-    }
 }
