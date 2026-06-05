@@ -1,0 +1,49 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build (release)
+        run: swift build -c release
+
+      - name: Run tests
+        run: swift test
+
+      - name: Package .app & DMG
+        run: scripts/package.sh
+
+      - name: Upload DMG as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yutools-dmg
+          path: "Yutools-*.dmg"
+          if-no-files-found: error
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: 羽工具箱 v${{ github.run_number }}
+          body: |
+            ## 羽工具箱 v${{ github.run_number }}
+
+            自动构建 Release。
+            基于 commit: ${{ github.sha }}
+          files: "Yutools-*.dmg"
+          draft: false
+          prerelease: false
+          generate_release_notes: true

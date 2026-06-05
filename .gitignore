@@ -1,3 +1,6 @@
 .DS_Store
 .build/
 .superpowers/
+*.dmg
+Yutools.app
+dmg-contents/
