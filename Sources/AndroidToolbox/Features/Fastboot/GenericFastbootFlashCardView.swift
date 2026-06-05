@@ -4,10 +4,6 @@ struct GenericFastbootFlashCardView: View {
     @Bindable var viewModel: FastbootViewModel
     @Binding var isFilePickerPresented: Bool
     @Binding var showFlashConfirmation: Bool
-    var accent: Color = .red
-
-    private let border = Color.black.opacity(0.08)
-
     private var currentStep: Int {
         if viewModel.customImagePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return 1
@@ -23,15 +19,6 @@ struct GenericFastbootFlashCardView: View {
             stepTabs
             mainCard
         }
-        .padding(14)
-        .background(LiquidGlassTheme.cardBackground)
-        .background(LiquidGlassTheme.cardTint)
-        .overlay {
-            RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous)
-                .stroke(LiquidGlassTheme.stroke, lineWidth: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTheme.cornerRadius, style: .continuous))
-        .shadow(color: LiquidGlassTheme.secondaryShadow, radius: 9, y: 4)
     }
 
     private var stepTabs: some View {
@@ -51,7 +38,7 @@ struct GenericFastbootFlashCardView: View {
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(isCurrent || isDone ? .white : .secondary)
                 .frame(width: 28, height: 28)
-                .background(isCurrent ? accent : (isDone ? Color.black.opacity(0.82) : Color.black.opacity(0.08)))
+                .background(isCurrent ? Color.red : (isDone ? Color.black.opacity(0.82) : Color.black.opacity(0.08)))
                 .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
@@ -67,10 +54,10 @@ struct GenericFastbootFlashCardView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .padding(.horizontal, 10)
-        .background(isCurrent ? AnyShapeStyle(accent.opacity(0.08)) : LiquidGlassTheme.panelBackground)
+        .background(isCurrent ? AnyShapeStyle(Color.red.opacity(0.08)) : LiquidGlassTheme.panelBackground)
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(isCurrent ? accent.opacity(0.35) : border, lineWidth: 1)
+                .stroke(isCurrent ? Color.red.opacity(0.35) : Color.black.opacity(0.08), lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
@@ -88,7 +75,7 @@ struct GenericFastbootFlashCardView: View {
                 Spacer()
                 Label(viewModel.canExecuteCommand ? "设备已就绪" : "等待设备", systemImage: viewModel.canExecuteCommand ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(viewModel.canExecuteCommand ? .green : accent)
+                    .foregroundStyle(viewModel.canExecuteCommand ? .green : Color.red)
             }
 
             HStack(alignment: .top, spacing: 12) {
@@ -108,7 +95,7 @@ struct GenericFastbootFlashCardView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)
-                .tint(accent)
+                .tint(Color.red)
                 .disabled(!viewModel.canFlashGeneric || viewModel.isBusy)
             }
         }
@@ -194,7 +181,7 @@ struct GenericFastbootFlashCardView: View {
                 .background(LiquidGlassTheme.cardBackground)
                 .overlay {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(border, lineWidth: 1)
+                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
