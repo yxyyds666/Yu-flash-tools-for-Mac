@@ -10,13 +10,13 @@ struct FastbootPanelView: View {
         VStack(alignment: .leading, spacing: 10) {
             headerRow
             HStack(alignment: .top, spacing: 12) {
+                FastbootModeSelectorView(modes: viewModel.flashModes, selectedMode: $selectedFlashMode)
+
                 VStack(spacing: 10) {
                     rebootSection
                     flashDetailCard
                 }
                 .frame(maxWidth: .infinity)
-
-                FastbootModeSelectorView(modes: viewModel.flashModes, selectedMode: $selectedFlashMode)
             }
             Spacer(minLength: 0)
         }
