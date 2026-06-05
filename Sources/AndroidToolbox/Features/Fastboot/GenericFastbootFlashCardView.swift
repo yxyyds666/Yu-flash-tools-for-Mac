@@ -4,7 +4,7 @@ struct GenericFastbootFlashCardView: View {
     @Bindable var viewModel: FastbootViewModel
     @Binding var isFilePickerPresented: Bool
     @Binding var showFlashConfirmation: Bool
-    let accent: Color
+    var accent: Color = .red
 
     private let border = Color.black.opacity(0.08)
 

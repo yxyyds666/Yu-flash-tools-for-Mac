@@ -3,7 +3,7 @@ import SwiftUI
 struct FastbootModeSelectorView: View {
     let modes: [FastbootFlashMode]
     @Binding var selectedMode: FastbootFlashMode
-    let accent: Color
+    var accent: Color = .red
 
     var body: some View {
         HStack(spacing: 8) {
