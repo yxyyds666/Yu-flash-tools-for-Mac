@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches-ignore: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'docs/**'
+      - '.vscode/**'
+      - '.gitignore'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'docs/**'
+      - '.vscode/**'
+      - '.gitignore'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode (Swift 6.2+)
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          version: 'latest'
+
+      - name: Cache SPM build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**/*.swift') }}
+          restore-keys: |
+            spm-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+            spm-${{ runner.os }}-
+
+      - name: Test (debug)
+        run: swift test

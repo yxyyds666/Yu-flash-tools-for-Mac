@@ -1,58 +1,181 @@
-name: Build & Release
+name: Release
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'docs/**'
+      - '.vscode/**'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 1.2.3). Leave empty to auto-derive from commit count.'
+        required: false
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  build:
+  release:
     runs-on: macos-15
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Select Xcode (for Swift 6.2+)
+      - name: Select Xcode (Swift 6.2+)
         uses: maxim-lobanov/setup-xcode@v1
         with:
           version: 'latest'
 
-      - name: Build (release)
-        run: swift build --configuration release
+      - name: Cache SPM build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-release-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-${{ hashFiles('Sources/**/*.swift') }}
+          restore-keys: |
+            spm-release-${{ runner.os }}-${{ hashFiles('Package.swift', 'Package.resolved') }}-
+            spm-release-${{ runner.os }}-
 
-      - name: Run tests
+      - name: Test (fail fast before release build)
         run: swift test
 
-      - name: Package .app & DMG
-        run: scripts/package.sh
+      - name: Resolve version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="1.0.$(git rev-list --count HEAD)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
 
-      - name: Upload DMG as artifact
+      - name: Check if release already exists
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release v${{ steps.version.outputs.version }} already exists, skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build (release)
+        if: steps.check.outputs.exists == 'false'
+        run: swift build --configuration release
+
+      - name: Package .app & DMG
+        if: steps.check.outputs.exists == 'false'
+        env:
+          SKIP_BUILD: '1'
+        run: scripts/package.sh "${{ steps.version.outputs.version }}"
+
+      # ---------------------------------------------------------------
+      # Code-signing & notarization (placeholder).
+      # Uncomment once these repository secrets are configured:
+      #   APPLE_DEVELOPER_ID_CERT_P12_BASE64 — base64 of your Developer ID
+      #     Application .p12 (export from Keychain).
+      #   APPLE_DEVELOPER_ID_CERT_PASSWORD   — password for the .p12.
+      #   APPLE_DEVELOPER_ID_SIGNING_IDENTITY — e.g. "Developer ID
+      #     Application: Your Name (TEAMID)".
+      #   APPLE_ID                — Apple ID email used for notarization.
+      #   APPLE_TEAM_ID           — 10-char team id.
+      #   APPLE_APP_SPECIFIC_PASSWORD — app-specific password for that
+      #     Apple ID.
+      # ---------------------------------------------------------------
+      # - name: Import signing certificate
+      #   if: steps.check.outputs.exists == 'false'
+      #   env:
+      #     CERT_BASE64: ${{ secrets.APPLE_DEVELOPER_ID_CERT_P12_BASE64 }}
+      #     CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD }}
+      #   run: |
+      #     KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"
+      #     KEYCHAIN_PASSWORD=$(uuidgen)
+      #     echo "$CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+      #     security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+      #     security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+      #     security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+      #     security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN_PATH" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+      #     security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+      #
+      # - name: Sign .app
+      #   if: steps.check.outputs.exists == 'false'
+      #   env:
+      #     IDENTITY: ${{ secrets.APPLE_DEVELOPER_ID_SIGNING_IDENTITY }}
+      #   run: |
+      #     codesign --force --deep --options runtime --timestamp \
+      #       --sign "$IDENTITY" Yutools.app
+      #     codesign --verify --verbose=2 Yutools.app
+      #
+      # - name: Notarize DMG
+      #   if: steps.check.outputs.exists == 'false'
+      #   env:
+      #     APPLE_ID: ${{ secrets.APPLE_ID }}
+      #     TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      #     APP_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      #   run: |
+      #     DMG=$(ls Yutools-*.dmg | head -n1)
+      #     xcrun notarytool submit "$DMG" \
+      #       --apple-id "$APPLE_ID" \
+      #       --team-id "$TEAM_ID" \
+      #       --password "$APP_PASSWORD" \
+      #       --wait
+      #     xcrun stapler staple "$DMG"
+
+      - name: Generate release notes
+        if: steps.check.outputs.exists == 'false'
+        id: notes
+        run: |
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          {
+            echo "notes<<NOTES_EOF"
+            echo "## 羽工具箱 v${{ steps.version.outputs.version }}"
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo "### Changes since $PREV_TAG"
+              git log --pretty=format:'- %s (%h)' "$PREV_TAG"..HEAD
+            else
+              echo "### Changes"
+              git log --pretty=format:'- %s (%h)' -n 20
+            fi
+            echo ""
+            echo ""
+            echo "Built from \`${{ github.sha }}\`."
+            echo "NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload DMG artifact
+        if: steps.check.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: Yutools-dmg
+          name: Yutools-${{ steps.version.outputs.version }}-dmg
           path: "Yutools-*.dmg"
           if-no-files-found: error
+          retention-days: 30
 
       - name: Create Release
+        if: steps.check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ github.run_number }}
-          name: 羽工具箱 v${{ github.run_number }}
-          body: |
-            ## 羽工具箱 v${{ github.run_number }}
-
-            自动构建 Release。
-            基于 commit: ${{ github.sha }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: 羽工具箱 v${{ steps.version.outputs.version }}
+          body: ${{ steps.notes.outputs.notes }}
           files: "Yutools-*.dmg"
           draft: false
           prerelease: false

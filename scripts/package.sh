@@ -5,11 +5,16 @@ APP_NAME="Yutools"
 BUNDLE_ID="com.yxyyds666.Yutools"
 BUILD_DIR=".build/release"
 VERSION="${1:-1.0.$(git rev-list --count HEAD 2>/dev/null || echo 0)}"
+SKIP_BUILD="${SKIP_BUILD:-0}"
 
 echo "==> Packaging $APP_NAME v$VERSION"
 
-# Build release binary
-swift build -c release
+# Build release binary (skippable when CI already built)
+if [ "$SKIP_BUILD" = "1" ] && [ -x "$BUILD_DIR/$APP_NAME" ]; then
+  echo "==> Skipping swift build (SKIP_BUILD=1, binary present)"
+else
+  swift build -c release
+fi
 
 # Create .app bundle structure
 APP_BUNDLE="$APP_NAME.app"
@@ -79,28 +84,22 @@ echo "APPL????" > "$APP_BUNDLE/Contents/PkgInfo"
 
 echo "==> Created $APP_BUNDLE"
 
-# Create DMG
+# Create DMG (single-pass, auto-sized, UDZO compressed)
 DMG_NAME="${APP_NAME}-${VERSION}.dmg"
-DMG_TEMP="${APP_NAME}-temp.dmg"
 DMG_DIR="dmg-contents"
 
-rm -rf "$DMG_DIR" "$DMG_TEMP" "$DMG_NAME"
+rm -rf "$DMG_DIR" "$DMG_NAME"
 mkdir -p "$DMG_DIR"
 
-# Copy .app into DMG staging
 cp -R "$APP_BUNDLE" "$DMG_DIR/"
 ln -s /Applications "$DMG_DIR/Applications"
 
-# Create compressed DMG
 hdiutil create -volname "羽工具箱" \
   -srcfolder "$DMG_DIR" \
   -ov -format UDZO \
-  -size 512m \
-  "$DMG_TEMP"
+  "$DMG_NAME"
 
-# Convert to read-only compressed
-hdiutil convert "$DMG_TEMP" -format UDZO -o "$DMG_NAME"
-rm -rf "$DMG_TEMP" "$DMG_DIR"
+rm -rf "$DMG_DIR"
 
 echo "==> Created $DMG_NAME ($(du -h "$DMG_NAME" | cut -f1))"
 echo "==> Done"
