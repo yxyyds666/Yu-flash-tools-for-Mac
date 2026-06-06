@@ -334,49 +334,63 @@ final class ADBViewModel {
             return
         }
 
-        do {
-            try scrcpyService.start(
-                deviceSerial: serial,
-                maxSize: scrcpyMaxSize,
-                bitRate: scrcpyBitRate,
-                turnScreenOff: scrcpyTurnScreenOff,
-                maxFPS: scrcpyMaxFPS,
-                fullscreen: scrcpyFullscreen,
-                alwaysOnTop: scrcpyAlwaysOnTop,
-                noAudio: scrcpyNoAudio,
-                noControl: scrcpyNoControl,
-                showTouches: scrcpyShowTouches,
-                windowTitle: scrcpyWindowTitle,
-                onTerminate: { [weak self] status, output in
-                    DispatchQueue.main.async {
-                        guard let self else { return }
-                        self.isScrcpyRunning = false
-                        self.scrcpyShortcutPanelController.close()
-                        if status != 0 {
-                            let message = output.trimmingCharacters(in: .whitespacesAndNewlines)
-                            let finalMessage = message.isEmpty ? "无错误输出" : message
-                            self.appendLog("[投屏] 已退出（code=\(status)）\n\(finalMessage)")
-                        } else {
-                            self.appendLog("[投屏] 已退出")
+        let scrcpyService = scrcpyService
+        let maxSize = scrcpyMaxSize
+        let bitRate = scrcpyBitRate
+        let turnScreenOff = scrcpyTurnScreenOff
+        let maxFPS = scrcpyMaxFPS
+        let fullscreen = scrcpyFullscreen
+        let alwaysOnTop = scrcpyAlwaysOnTop
+        let noAudio = scrcpyNoAudio
+        let noControl = scrcpyNoControl
+        let showTouches = scrcpyShowTouches
+        let windowTitle = scrcpyWindowTitle
+        Task { [weak self] in
+            do {
+                try await scrcpyService.start(
+                    deviceSerial: serial,
+                    maxSize: maxSize,
+                    bitRate: bitRate,
+                    turnScreenOff: turnScreenOff,
+                    maxFPS: maxFPS,
+                    fullscreen: fullscreen,
+                    alwaysOnTop: alwaysOnTop,
+                    noAudio: noAudio,
+                    noControl: noControl,
+                    showTouches: showTouches,
+                    windowTitle: windowTitle,
+                    onTerminate: { [weak self] status, output in
+                        Task { @MainActor in
+                            guard let self else { return }
+                            self.isScrcpyRunning = false
+                            self.scrcpyShortcutPanelController.close()
+                            if status != 0 {
+                                let message = output.trimmingCharacters(in: .whitespacesAndNewlines)
+                                let finalMessage = message.isEmpty ? "无错误输出" : message
+                                self.appendLog("[投屏] 已退出（code=\(status)）\n\(finalMessage)")
+                            } else {
+                                self.appendLog("[投屏] 已退出")
+                            }
                         }
                     }
+                )
+                guard let self else { return }
+                self.isScrcpyRunning = true
+                self.scrcpyShortcutPanelController.show(windowTitle: windowTitle) { [weak self] action in
+                    Task { @MainActor in
+                        self?.handleScrcpyShortcut(action)
+                    }
                 }
-            )
-            isScrcpyRunning = true
-            scrcpyShortcutPanelController.show(windowTitle: scrcpyWindowTitle) { [weak self] action in
-                Task { @MainActor in
-                    self?.handleScrcpyShortcut(action)
-                }
+                self.appendLog("[投屏] 已启动 scrcpy（\(maxSize)p / \(bitRate)Mbps）")
+            } catch ScrcpyServiceError.executableMissing {
+                self?.appendLog("[投屏] 失败：未找到 scrcpy，请执行 brew install scrcpy")
+            } catch ScrcpyServiceError.launchFailed(let detail) {
+                let message = detail.trimmingCharacters(in: .whitespacesAndNewlines)
+                let finalMessage = message.isEmpty ? "未知错误" : message
+                self?.appendLog("[投屏] 启动失败：\(finalMessage)")
+            } catch {
+                self?.appendLog("[投屏] 启动失败：\(error.localizedDescription)")
             }
-            appendLog("[投屏] 已启动 scrcpy（\(scrcpyMaxSize)p / \(scrcpyBitRate)Mbps）")
-        } catch ScrcpyServiceError.executableMissing {
-            appendLog("[投屏] 失败：未找到 scrcpy，请执行 brew install scrcpy")
-        } catch ScrcpyServiceError.launchFailed(let detail) {
-            let message = detail.trimmingCharacters(in: .whitespacesAndNewlines)
-            let finalMessage = message.isEmpty ? "未知错误" : message
-            appendLog("[投屏] 启动失败：\(finalMessage)")
-        } catch {
-            appendLog("[投屏] 启动失败：\(error.localizedDescription)")
         }
     }
 

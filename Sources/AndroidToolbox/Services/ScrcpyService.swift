@@ -5,12 +5,11 @@ enum ScrcpyServiceError: Error {
     case launchFailed(String)
 }
 
-final class ScrcpyService {
-    private var process: Process?
-    private var outputPipe: Pipe?
+final class ScrcpyService: Sendable {
+    private let state = ScrcpyState()
 
     var isRunning: Bool {
-        process?.isRunning ?? false
+        state.isRunning
     }
 
     func locate() -> URL? {
@@ -55,12 +54,12 @@ final class ScrcpyService {
         showTouches: Bool = false,
         windowTitle: String? = nil,
         onTerminate: (@Sendable (Int32, String) -> Void)? = nil
-    ) throws {
+    ) async throws {
         guard let executable = locate() else {
             throw ScrcpyServiceError.executableMissing
         }
 
-        if process?.isRunning == true {
+        if state.isRunning {
             return
         }
 
@@ -115,35 +114,87 @@ final class ScrcpyService {
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
-        outputPipe = pipe
+
+        // Buffer output via readabilityHandler so termination can flush a
+        // useful tail back to the caller without risking pipe buffer deadlock.
+        let buffer = OutputBuffer()
+        pipe.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return }
+            buffer.append(chunk)
+        }
+
+        process.terminationHandler = { [state] proc in
+            pipe.fileHandleForReading.readabilityHandler = nil
+            if let tail = try? pipe.fileHandleForReading.readToEnd(), !tail.isEmpty {
+                buffer.append(tail)
+            }
+            state.clear()
+            onTerminate?(proc.terminationStatus, buffer.snapshot())
+        }
 
         do {
             try process.run()
-            Thread.sleep(forTimeInterval: 0.35)
-            if !process.isRunning {
-                let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
-                let output = String(decoding: outputData, as: UTF8.self)
-                throw ScrcpyServiceError.launchFailed(output.isEmpty ? "scrcpy exited immediately" : output)
-            }
-            self.process = process
-            if let onTerminate {
-                Thread.detachNewThread {
-                    process.waitUntilExit()
-                    let outputData = pipe.fileHandleForReading.readDataToEndOfFile()
-                    let output = String(decoding: outputData, as: UTF8.self)
-                    onTerminate(process.terminationStatus, output)
-                }
-            }
-        } catch let error as ScrcpyServiceError {
-            throw error
         } catch {
             throw ScrcpyServiceError.launchFailed(error.localizedDescription)
+        }
+
+        state.set(process: process)
+
+        // Give scrcpy a brief moment to fail-fast (missing device, bad args,
+        // missing scrcpy-server). 350ms matches the prior threshold.
+        try? await Task.sleep(nanoseconds: 350_000_000)
+
+        if !process.isRunning {
+            let output = buffer.snapshot()
+            throw ScrcpyServiceError.launchFailed(output.isEmpty ? "scrcpy exited immediately" : output)
         }
     }
 
     func stop() {
-        process?.terminate()
+        state.terminate()
+    }
+}
+
+private final class ScrcpyState: @unchecked Sendable {
+    private let lock = NSLock()
+    private var process: Process?
+
+    var isRunning: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return process?.isRunning ?? false
+    }
+
+    func set(process: Process) {
+        lock.lock(); defer { lock.unlock() }
+        self.process = process
+    }
+
+    func clear() {
+        lock.lock(); defer { lock.unlock() }
         process = nil
-        outputPipe = nil
+    }
+
+    func terminate() {
+        lock.lock()
+        let p = process
+        process = nil
+        lock.unlock()
+        p?.terminate()
+    }
+}
+
+private final class OutputBuffer: @unchecked Sendable {
+    private let lock = NSLock()
+    private var data = Data()
+
+    func append(_ chunk: Data) {
+        lock.lock(); defer { lock.unlock() }
+        data.append(chunk)
+    }
+
+    func snapshot() -> String {
+        lock.lock(); defer { lock.unlock() }
+        return String(decoding: data, as: UTF8.self)
     }
 }
