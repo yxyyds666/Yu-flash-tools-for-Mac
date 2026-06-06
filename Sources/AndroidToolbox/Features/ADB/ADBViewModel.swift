@@ -447,7 +447,7 @@ final class ADBViewModel {
         let serial = selectedADBSerial
         Task { [weak self] in
             do {
-                _ = try await service.runShell("screencap -p \(remotePath)", serial: serial)
+                _ = try await service.runShell("screencap -p \(ADBShell.quote(remotePath))", serial: serial)
                 self?.appendLog("[投屏快捷] 已截图到设备：\(remotePath)")
             } catch {
                 self?.appendLog("[投屏快捷] 截图失败：\(error.localizedDescription)")

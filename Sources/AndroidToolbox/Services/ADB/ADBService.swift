@@ -82,11 +82,13 @@ final class ADBService: Sendable {
     }
 
     func grantPermission(packageName: String, permission: String, serial: String? = nil) async throws -> String {
-        try await run(arguments: ["shell", "pm", "grant", packageName, permission], serial: serial)
+        let command = "pm grant \(ADBShell.quote(packageName)) \(ADBShell.quote(permission))"
+        return try await run(arguments: ["shell", command], serial: serial)
     }
 
     func revokePermission(packageName: String, permission: String, serial: String? = nil) async throws -> String {
-        try await run(arguments: ["shell", "pm", "revoke", packageName, permission], serial: serial)
+        let command = "pm revoke \(ADBShell.quote(packageName)) \(ADBShell.quote(permission))"
+        return try await run(arguments: ["shell", command], serial: serial)
     }
 
     func pull(remotePath: String, localPath: String, serial: String? = nil) async throws -> String {
@@ -98,12 +100,12 @@ final class ADBService: Sendable {
     }
 
     func listRemoteDirectory(path: String, asRoot: Bool = false, serial: String? = nil) async throws -> [ADBFileEntry] {
+        let lsCommand = "ls -a -p -- \(ADBShell.quote(path))"
         let arguments: [String]
         if asRoot {
-            let command = "ls -a -p -- \(shellQuote(path))"
-            arguments = ["shell", "su", "-c", command]
+            arguments = ["shell", "su", "-c", lsCommand]
         } else {
-            arguments = ["shell", "ls", "-a", "-p", "--", path]
+            arguments = ["shell", lsCommand]
         }
 
         let output = try await run(arguments: arguments, serial: serial)
@@ -145,10 +147,6 @@ final class ADBService: Sendable {
             return "/\(name)"
         }
         return base.hasSuffix("/") ? base + name : base + "/" + name
-    }
-
-    private func shellQuote(_ value: String) -> String {
-        "'\(value.replacingOccurrences(of: "'", with: "'\\''"))'"
     }
 
     private func run(arguments: [String], timeout: TimeInterval = 20, serial: String? = nil) async throws -> String {

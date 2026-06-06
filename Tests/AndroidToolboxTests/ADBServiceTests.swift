@@ -158,7 +158,7 @@ func adbService_listRemoteDirectory_parsesAndSortsEntries() async throws {
     #expect(entries[0].isDirectory)
     #expect(entries[2].isDirectory == false)
     #expect(entries[0].path == "/sdcard/Download")
-    #expect(runner.capturedArguments == ["shell", "ls", "-a", "-p", "--", "/sdcard"])
+    #expect(runner.capturedArguments == ["shell", "ls -a -p -- '/sdcard'"])
 }
 
 @Test
