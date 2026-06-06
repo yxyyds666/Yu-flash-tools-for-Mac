@@ -8,6 +8,7 @@ final class EDLViewModel {
     var selectedDevice: DeviceInfo = .disconnected
     var rawCommand: String = ""
     var logs: String = ""
+    var isExecutingRawCommand: Bool = false
 
     private let service: EDLService
     private let appLogStore: AppLogStore
@@ -29,10 +30,13 @@ final class EDLViewModel {
     }
 
     func runRawCommand() {
+        guard !isExecutingRawCommand else { return }
         let command = rawCommand.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !command.isEmpty else { return }
         let service = service
+        isExecutingRawCommand = true
         Task { [weak self] in
+            defer { Task { @MainActor [weak self] in self?.isExecutingRawCommand = false } }
             do {
                 let output = try await service.runRawCommand(command)
                 self?.appendLog("[edl] \(command)\n\(output)")

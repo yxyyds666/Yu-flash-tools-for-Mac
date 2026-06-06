@@ -45,6 +45,12 @@ final class ADBViewModel {
     var logs: String = ""
     var isAutoRefreshing: Bool = false
     var isScrcpyRunning: Bool = false
+    var isInstallingApk: Bool = false
+    var isUninstallingApp: Bool = false
+    var isExecutingShell: Bool = false
+    var isPullingFile: Bool = false
+    var isPushingFile: Bool = false
+    var isLoadingPackages: Bool = false
     var scrcpyMaxSize: Int = 1024
     var scrcpyBitRate: Int = 8
     var scrcpyTurnScreenOff: Bool = false
@@ -258,11 +264,14 @@ final class ADBViewModel {
     }
 
     func executeShell() {
+        guard !isExecutingShell else { return }
         guard !shellCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         let service = service
         let serial = selectedADBSerial
         let command = shellCommand
+        isExecutingShell = true
         Task { [weak self] in
+            defer { Task { @MainActor [weak self] in self?.isExecutingShell = false } }
             do {
                 let result = try await service.runShell(command, serial: serial)
                 self?.appendLog("[Shell] \(command)\n\(result)")
@@ -273,11 +282,14 @@ final class ADBViewModel {
     }
 
     func installApk() {
+        guard !isInstallingApk else { return }
         guard !apkPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         let service = service
         let serial = selectedADBSerial
         let path = apkPath
+        isInstallingApk = true
         Task { [weak self] in
+            defer { Task { @MainActor [weak self] in self?.isInstallingApk = false } }
             do {
                 let result = try await service.install(apkPath: path, serial: serial)
                 self?.appendLog("[安装] \(path)\n\(result)")
@@ -288,11 +300,14 @@ final class ADBViewModel {
     }
 
     func uninstallApp() {
+        guard !isUninstallingApp else { return }
         let pkg = uninstallPackageName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !pkg.isEmpty else { return }
         let service = service
         let serial = selectedADBSerial
+        isUninstallingApp = true
         Task { [weak self] in
+            defer { Task { @MainActor [weak self] in self?.isUninstallingApp = false } }
             do {
                 let result = try await service.uninstall(packageName: pkg, serial: serial)
                 self?.appendLog("[卸载] \(pkg)\n\(result)")
@@ -304,12 +319,15 @@ final class ADBViewModel {
     }
 
     func refreshInstalledPackages() {
+        guard !isLoadingPackages else { return }
         installedApps = []
         appendLog("[应用列表] 正在加载…")
 
         let service = service
         let serial = selectedADBSerial
+        isLoadingPackages = true
         Task { [weak self] in
+            defer { Task { @MainActor [weak self] in self?.isLoadingPackages = false } }
             do {
                 let apps = try await service.listThirdPartyPackages(serial: serial)
                 guard let self else { return }
@@ -470,12 +488,15 @@ final class ADBViewModel {
     }
 
     func pullFile() {
+        guard !isPullingFile else { return }
         guard !pullRemotePath.isEmpty, !pullLocalPath.isEmpty else { return }
         let service = service
         let remote = pullRemotePath
         let local = pullLocalPath
         let serial = selectedADBSerial
+        isPullingFile = true
         Task { [weak self] in
+            defer { Task { @MainActor [weak self] in self?.isPullingFile = false } }
             do {
                 let result = try await service.pull(remotePath: remote, localPath: local, serial: serial)
                 self?.appendLog("[拉取] \(remote) -> \(local)\n\(result)")
@@ -486,12 +507,15 @@ final class ADBViewModel {
     }
 
     func pushFile() {
+        guard !isPushingFile else { return }
         guard !pushLocalPath.isEmpty, !pushRemotePath.isEmpty else { return }
         let service = service
         let local = pushLocalPath
         let remote = pushRemotePath
         let serial = selectedADBSerial
+        isPushingFile = true
         Task { [weak self] in
+            defer { Task { @MainActor [weak self] in self?.isPushingFile = false } }
             do {
                 let result = try await service.push(localPath: local, remotePath: remote, serial: serial)
                 self?.appendLog("[推送] \(local) -> \(remote)\n\(result)")

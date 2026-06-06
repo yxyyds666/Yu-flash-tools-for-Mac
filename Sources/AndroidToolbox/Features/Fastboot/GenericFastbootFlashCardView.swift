@@ -92,8 +92,14 @@ struct GenericFastbootFlashCardView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("开始刷写") {
-                    showFlashConfirmation = true
+                Button(action: { showFlashConfirmation = true }) {
+                    HStack(spacing: 6) {
+                        if viewModel.isBusy {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text(viewModel.isBusy ? "刷写中…" : "开始刷写")
+                    }
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)

@@ -496,11 +496,17 @@ struct ADBPanelView: View {
                 }
 
                 Button(action: { viewModel.installApk() }) {
-                    Label("安装", systemImage: "arrow.down.to.line")
-                        .frame(maxWidth: 160)
+                    HStack(spacing: 6) {
+                        if viewModel.isInstallingApk {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Label(viewModel.isInstallingApk ? "安装中…" : "安装", systemImage: "arrow.down.to.line")
+                    }
+                    .frame(maxWidth: 160)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(viewModel.apkPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(viewModel.isInstallingApk || viewModel.apkPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(.vertical, 12)
         }
@@ -523,11 +529,17 @@ struct ADBPanelView: View {
                         .textFieldStyle(.roundedBorder)
 
                     Button(action: { viewModel.uninstallApp() }) {
-                        Label("卸载", systemImage: "trash")
+                        HStack(spacing: 6) {
+                            if viewModel.isUninstallingApp {
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                            Label(viewModel.isUninstallingApp ? "卸载中…" : "卸载", systemImage: "trash")
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
-                    .disabled(viewModel.uninstallPackageName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(viewModel.isUninstallingApp || viewModel.uninstallPackageName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -539,6 +551,7 @@ struct ADBPanelView: View {
                             viewModel.refreshInstalledPackages()
                         }
                         .controlSize(.small)
+                        .disabled(viewModel.isLoadingPackages)
                     }
 
                     if viewModel.installedApps.isEmpty {
@@ -747,17 +760,29 @@ struct ADBPanelView: View {
 
                 Divider()
 
-                Button("Push 到设备 →") {
-                    viewModel.pushSelected()
+                Button(action: { viewModel.pushSelected() }) {
+                    HStack(spacing: 6) {
+                        if viewModel.isPushingFile {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text(viewModel.isPushingFile ? "Push 中…" : "Push 到设备 →")
+                    }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!viewModel.canPushSelected)
+                .disabled(viewModel.isPushingFile || !viewModel.canPushSelected)
 
-                Button("← Pull 到本地") {
-                    viewModel.pullSelected()
+                Button(action: { viewModel.pullSelected() }) {
+                    HStack(spacing: 6) {
+                        if viewModel.isPullingFile {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text(viewModel.isPullingFile ? "Pull 中…" : "← Pull 到本地")
+                    }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(!viewModel.canPullSelected)
+                .disabled(viewModel.isPullingFile || !viewModel.canPullSelected)
             }
             .frame(maxWidth: .infinity, alignment: .top)
         }

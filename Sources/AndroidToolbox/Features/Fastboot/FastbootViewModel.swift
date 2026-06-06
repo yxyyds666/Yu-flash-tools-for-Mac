@@ -146,15 +146,16 @@ final class FastbootViewModel {
     }
 
     func readVar() {
+        guard !isBusy else { return }
         guard !varKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard ensureDeviceReady() else { return }
 
         let service = service
         let key = varKey
         let serial = selectedFastbootSerial
+        isBusy = true
         Task { [weak self] in
-            self?.isBusy = true
-            defer { self?.isBusy = false }
+            defer { Task { @MainActor [weak self] in self?.isBusy = false } }
             do {
                 let result = try await service.getVar(key, serial: serial)
                 self?.appendLog("[getvar] \(key)\n\(result)")
@@ -165,13 +166,14 @@ final class FastbootViewModel {
     }
 
     func reboot(to target: FastbootRebootTarget, label: String) {
+        guard !isBusy else { return }
         guard ensureDeviceReady() else { return }
 
         let service = service
         let serial = selectedFastbootSerial
+        isBusy = true
         Task { [weak self] in
-            self?.isBusy = true
-            defer { self?.isBusy = false }
+            defer { Task { @MainActor [weak self] in self?.isBusy = false } }
             do {
                 let result = try await service.reboot(target, serial: serial)
                 self?.appendLog("[重启] \(label)\n\(result)")
@@ -182,6 +184,7 @@ final class FastbootViewModel {
     }
 
     func flashGeneric(imagePath: String, partition: String) {
+        guard !isBusy else { return }
         guard ensureDeviceReady() else { return }
 
         switch GenericFastbootFlashValidation.validate(imagePath: imagePath, partition: partition) {
@@ -195,9 +198,9 @@ final class FastbootViewModel {
         let service = service
         let serial = selectedFastbootSerial
         let deviceSerial = selectedDevice.serial
+        isBusy = true
         Task { [weak self] in
-            self?.isBusy = true
-            defer { self?.isBusy = false }
+            defer { Task { @MainActor [weak self] in self?.isBusy = false } }
             do {
                 let url = URL(fileURLWithPath: imagePath)
                 self?.appendLog("[刷写] 开始\n设备：\(deviceSerial)\n分区：\(partition)\n镜像：\(imagePath)")
