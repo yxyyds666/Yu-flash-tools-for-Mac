@@ -149,14 +149,17 @@ final class FastbootViewModel {
         guard !varKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard ensureDeviceReady() else { return }
 
-        Task {
-            isBusy = true
-            defer { isBusy = false }
+        let service = service
+        let key = varKey
+        let serial = selectedFastbootSerial
+        Task { [weak self] in
+            self?.isBusy = true
+            defer { self?.isBusy = false }
             do {
-                let result = try service.getVar(varKey, serial: selectedFastbootSerial)
-                appendLog("[getvar] \(varKey)\n\(result)")
+                let result = try await service.getVar(key, serial: serial)
+                self?.appendLog("[getvar] \(key)\n\(result)")
             } catch {
-                appendLog("[getvar] 失败：\(error.localizedDescription)")
+                self?.appendLog("[getvar] 失败：\(error.localizedDescription)")
             }
         }
     }
@@ -164,14 +167,16 @@ final class FastbootViewModel {
     func reboot(to target: FastbootRebootTarget, label: String) {
         guard ensureDeviceReady() else { return }
 
-        Task {
-            isBusy = true
-            defer { isBusy = false }
+        let service = service
+        let serial = selectedFastbootSerial
+        Task { [weak self] in
+            self?.isBusy = true
+            defer { self?.isBusy = false }
             do {
-                let result = try service.reboot(target, serial: selectedFastbootSerial)
-                appendLog("[重启] \(label)\n\(result)")
+                let result = try await service.reboot(target, serial: serial)
+                self?.appendLog("[重启] \(label)\n\(result)")
             } catch {
-                appendLog("[重启] \(label) 失败：\(error.localizedDescription)")
+                self?.appendLog("[重启] \(label) 失败：\(error.localizedDescription)")
             }
         }
     }
@@ -187,16 +192,19 @@ final class FastbootViewModel {
             return
         }
 
-        Task {
-            isBusy = true
-            defer { isBusy = false }
+        let service = service
+        let serial = selectedFastbootSerial
+        let deviceSerial = selectedDevice.serial
+        Task { [weak self] in
+            self?.isBusy = true
+            defer { self?.isBusy = false }
             do {
                 let url = URL(fileURLWithPath: imagePath)
-                appendLog("[刷写] 开始\n设备：\(selectedDevice.serial)\n分区：\(partition)\n镜像：\(imagePath)")
-                let result = try service.flash(partition: partition, image: url, serial: selectedFastbootSerial)
-                appendLog("[刷写] 分区「\(partition)」刷入完成\n\(result)")
+                self?.appendLog("[刷写] 开始\n设备：\(deviceSerial)\n分区：\(partition)\n镜像：\(imagePath)")
+                let result = try await service.flash(partition: partition, image: url, serial: serial)
+                self?.appendLog("[刷写] 分区「\(partition)」刷入完成\n\(result)")
             } catch {
-                appendLog("[刷写] 分区「\(partition)」刷入失败：\(error.localizedDescription)")
+                self?.appendLog("[刷写] 分区「\(partition)」刷入失败：\(error.localizedDescription)")
             }
         }
     }
@@ -212,17 +220,10 @@ final class FastbootViewModel {
     private func refreshDevices(showLog: Bool) async {
         guard !isRefreshingDevices else { return }
         isRefreshingDevices = true
+        defer { isRefreshingDevices = false }
 
-        let service = service
-        let serial = selectedFastbootSerial
-        let result = await Task.detached {
-            Result { try service.listDevices(serial: serial) }
-        }.value
-
-        isRefreshingDevices = false
-
-        switch result {
-        case .success(let list):
+        do {
+            let list = try await service.listDevices(serial: selectedFastbootSerial)
             devices = list
 
             if let matched = list.first(where: { $0.serial == selectedDevice.serial }) {
@@ -234,7 +235,7 @@ final class FastbootViewModel {
             if showLog {
                 appendLog("[fastboot devices] 刷新完成：共 \(list.count) 台")
             }
-        case .failure(let error):
+        } catch {
             if showLog {
                 appendLog("[fastboot devices] 刷新失败：\(error.localizedDescription)")
             }

@@ -14,11 +14,17 @@ let package = Package(
             name: "AndroidToolbox",
             resources: [
                 .copy("Resources")
+            ],
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
             ]
         ),
         .testTarget(
             name: "AndroidToolboxTests",
-            dependencies: ["AndroidToolbox"]
+            dependencies: ["AndroidToolbox"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
         )
     ]
 )

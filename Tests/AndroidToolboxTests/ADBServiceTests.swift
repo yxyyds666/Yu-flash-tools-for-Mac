@@ -8,7 +8,7 @@ private final class MockProcessRunner: ProcessRunning, @unchecked Sendable {
     private(set) var capturedExecutable: URL?
     private(set) var capturedArguments: [String] = []
 
-    func run(executable: URL, arguments: [String], timeout: TimeInterval) throws -> ProcessRunnerResult {
+    func run(executable: URL, arguments: [String], timeout: TimeInterval) async throws -> ProcessRunnerResult {
         capturedExecutable = executable
         capturedArguments = arguments
 
@@ -21,7 +21,7 @@ private final class MockProcessRunner: ProcessRunning, @unchecked Sendable {
 }
 
 @Test
-func adbService_listDevices_parsesOutputAndInvokesRunner() throws {
+func adbService_listDevices_parsesOutputAndInvokesRunner() async throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(
         output: """
@@ -34,7 +34,7 @@ func adbService_listDevices_parsesOutputAndInvokesRunner() throws {
     let executable = URL(fileURLWithPath: "/tmp/adb")
     let service = ADBService(runner: runner, resolveExecutable: { executable })
 
-    let list = try service.listDevices()
+    let list = try await service.listDevices()
 
     #expect(list.devices.count == 1)
     #expect(list.devices[0].serial == "emulator-5554")
@@ -43,12 +43,12 @@ func adbService_listDevices_parsesOutputAndInvokesRunner() throws {
 }
 
 @Test
-func adbService_listDevices_throwsWhenExecutableMissing() {
+func adbService_listDevices_throwsWhenExecutableMissing() async {
     let runner = MockProcessRunner()
     let service = ADBService(runner: runner, resolveExecutable: { nil })
 
     do {
-        _ = try service.listDevices()
+        _ = try await service.listDevices()
         Issue.record("Expected executableMissing error")
     } catch let error as ADBServiceError {
         switch error {
@@ -63,7 +63,7 @@ func adbService_listDevices_throwsWhenExecutableMissing() {
 }
 
 @Test
-func adbService_runShell_throwsCommandFailedWhenExitCodeNonZero() {
+func adbService_runShell_throwsCommandFailedWhenExitCodeNonZero() async {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "permission denied", exitCode: 1)
 
@@ -73,7 +73,7 @@ func adbService_runShell_throwsCommandFailedWhenExitCodeNonZero() {
     )
 
     do {
-        _ = try service.runShell("id")
+        _ = try await service.runShell("id")
         Issue.record("Expected commandFailed error")
     } catch let error as ADBServiceError {
         switch error {
@@ -88,7 +88,7 @@ func adbService_runShell_throwsCommandFailedWhenExitCodeNonZero() {
 }
 
 @Test
-func adbService_runShell_withExplicitSerial_injectsDashS() throws {
+func adbService_runShell_withExplicitSerial_injectsDashS() async throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "", exitCode: 0)
 
@@ -97,13 +97,13 @@ func adbService_runShell_withExplicitSerial_injectsDashS() throws {
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
 
-    _ = try service.runShell("id", serial: "abc123")
+    _ = try await service.runShell("id", serial: "abc123")
 
     #expect(runner.capturedArguments == ["-s", "abc123", "shell", "id"])
 }
 
 @Test
-func adbService_runShell_withExplicitSerial_injectsDashSWithoutMutableServiceState() throws {
+func adbService_runShell_withExplicitSerial_injectsDashSWithoutMutableServiceState() async throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "", exitCode: 0)
 
@@ -112,14 +112,14 @@ func adbService_runShell_withExplicitSerial_injectsDashSWithoutMutableServiceSta
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
 
-    _ = try service.runShell("id", serial: "abc123")
-    _ = try service.runShell("id")
+    _ = try await service.runShell("id", serial: "abc123")
+    _ = try await service.runShell("id")
 
     #expect(runner.capturedArguments == ["shell", "id"])
 }
 
 @Test
-func adbService_runShell_withoutSelectedSerial_omitsDashS() throws {
+func adbService_runShell_withoutSelectedSerial_omitsDashS() async throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "", exitCode: 0)
 
@@ -127,13 +127,13 @@ func adbService_runShell_withoutSelectedSerial_omitsDashS() throws {
         runner: runner,
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
-    _ = try service.runShell("id")
+    _ = try await service.runShell("id")
 
     #expect(runner.capturedArguments == ["shell", "id"])
 }
 
 @Test
-func adbService_listRemoteDirectory_parsesAndSortsEntries() throws {
+func adbService_listRemoteDirectory_parsesAndSortsEntries() async throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(
         output: """
@@ -152,7 +152,7 @@ func adbService_listRemoteDirectory_parsesAndSortsEntries() throws {
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
 
-    let entries = try service.listRemoteDirectory(path: "/sdcard")
+    let entries = try await service.listRemoteDirectory(path: "/sdcard")
 
     #expect(entries.map(\.name) == ["Download", "Movies", "a.txt", "z.txt"])
     #expect(entries[0].isDirectory)
@@ -162,7 +162,7 @@ func adbService_listRemoteDirectory_parsesAndSortsEntries() throws {
 }
 
 @Test
-func adbService_listRemoteDirectory_asRoot_usesSuCommand() throws {
+func adbService_listRemoteDirectory_asRoot_usesSuCommand() async throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "", exitCode: 0)
 
@@ -171,13 +171,13 @@ func adbService_listRemoteDirectory_asRoot_usesSuCommand() throws {
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
 
-    _ = try service.listRemoteDirectory(path: "/system", asRoot: true)
+    _ = try await service.listRemoteDirectory(path: "/system", asRoot: true)
 
     #expect(runner.capturedArguments == ["shell", "su", "-c", "ls -a -p -- '/system'"])
 }
 
 @Test
-func adbService_listRemoteDirectory_asRoot_quotesSpecialPath() throws {
+func adbService_listRemoteDirectory_asRoot_quotesSpecialPath() async throws {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "", exitCode: 0)
 
@@ -186,13 +186,13 @@ func adbService_listRemoteDirectory_asRoot_quotesSpecialPath() throws {
         resolveExecutable: { URL(fileURLWithPath: "/tmp/adb") }
     )
 
-    _ = try service.listRemoteDirectory(path: "/data/local/tmp/ab c'd", asRoot: true)
+    _ = try await service.listRemoteDirectory(path: "/data/local/tmp/ab c'd", asRoot: true)
 
     #expect(runner.capturedArguments == ["shell", "su", "-c", "ls -a -p -- '/data/local/tmp/ab c'\\''d'"])
 }
 
 @Test
-func adbService_listRemoteDirectory_asRoot_propagatesCommandFailure() {
+func adbService_listRemoteDirectory_asRoot_propagatesCommandFailure() async {
     let runner = MockProcessRunner()
     runner.nextResult = .init(output: "su: inaccessible or not found", exitCode: 1)
 
@@ -202,7 +202,7 @@ func adbService_listRemoteDirectory_asRoot_propagatesCommandFailure() {
     )
 
     do {
-        _ = try service.listRemoteDirectory(path: "/", asRoot: true)
+        _ = try await service.listRemoteDirectory(path: "/", asRoot: true)
         Issue.record("Expected commandFailed error")
     } catch let error as ADBServiceError {
         switch error {

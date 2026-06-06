@@ -179,13 +179,21 @@ final class ADBViewModel {
     }
 
     func refreshRemoteDirectory() {
-        do {
-            remoteEntries = try service.listRemoteDirectory(path: remoteCurrentPath, asRoot: isRootModeEnabled, serial: selectedADBSerial)
-            if !selectedRemotePath.isEmpty && remoteEntries.first(where: { $0.path == selectedRemotePath }) == nil {
-                selectedRemotePath = ""
+        let service = service
+        let path = remoteCurrentPath
+        let asRoot = isRootModeEnabled
+        let serial = selectedADBSerial
+        Task { [weak self] in
+            do {
+                let entries = try await service.listRemoteDirectory(path: path, asRoot: asRoot, serial: serial)
+                guard let self else { return }
+                self.remoteEntries = entries
+                if !self.selectedRemotePath.isEmpty && entries.first(where: { $0.path == self.selectedRemotePath }) == nil {
+                    self.selectedRemotePath = ""
+                }
+            } catch {
+                self?.appendLog("[文件管理] 设备目录读取失败：\(error.localizedDescription)")
             }
-        } catch {
-            appendLog("[文件管理] 设备目录读取失败：\(error.localizedDescription)")
         }
     }
 
@@ -251,33 +259,47 @@ final class ADBViewModel {
 
     func executeShell() {
         guard !shellCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        do {
-            let result = try service.runShell(shellCommand, serial: selectedADBSerial)
-            appendLog("[Shell] \(shellCommand)\n\(result)")
-        } catch {
-            appendLog("[Shell] 执行失败：\(error.localizedDescription)")
+        let service = service
+        let serial = selectedADBSerial
+        let command = shellCommand
+        Task { [weak self] in
+            do {
+                let result = try await service.runShell(command, serial: serial)
+                self?.appendLog("[Shell] \(command)\n\(result)")
+            } catch {
+                self?.appendLog("[Shell] 执行失败：\(error.localizedDescription)")
+            }
         }
     }
 
     func installApk() {
         guard !apkPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        do {
-            let result = try service.install(apkPath: apkPath, serial: selectedADBSerial)
-            appendLog("[安装] \(apkPath)\n\(result)")
-        } catch {
-            appendLog("[安装] 失败：\(error.localizedDescription)")
+        let service = service
+        let serial = selectedADBSerial
+        let path = apkPath
+        Task { [weak self] in
+            do {
+                let result = try await service.install(apkPath: path, serial: serial)
+                self?.appendLog("[安装] \(path)\n\(result)")
+            } catch {
+                self?.appendLog("[安装] 失败：\(error.localizedDescription)")
+            }
         }
     }
 
     func uninstallApp() {
         let pkg = uninstallPackageName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !pkg.isEmpty else { return }
-        do {
-            let result = try service.uninstall(packageName: pkg, serial: selectedADBSerial)
-            appendLog("[卸载] \(pkg)\n\(result)")
-            refreshInstalledPackages()
-        } catch {
-            appendLog("[卸载] 失败：\(error.localizedDescription)")
+        let service = service
+        let serial = selectedADBSerial
+        Task { [weak self] in
+            do {
+                let result = try await service.uninstall(packageName: pkg, serial: serial)
+                self?.appendLog("[卸载] \(pkg)\n\(result)")
+                self?.refreshInstalledPackages()
+            } catch {
+                self?.appendLog("[卸载] 失败：\(error.localizedDescription)")
+            }
         }
     }
 
@@ -287,20 +309,16 @@ final class ADBViewModel {
 
         let service = service
         let serial = selectedADBSerial
-        Task { [weak self, service, serial] in
-            let result = await Task.detached {
-                Result { try service.listThirdPartyPackages(serial: serial) }
-            }.value
-
-            switch result {
-            case .success(let apps):
+        Task { [weak self] in
+            do {
+                let apps = try await service.listThirdPartyPackages(serial: serial)
                 guard let self else { return }
-                    self.installedApps = apps
-                    self.appendLog("[应用列表] 已加载 \(apps.count) 个应用")
-            case .failure(let error):
+                self.installedApps = apps
+                self.appendLog("[应用列表] 已加载 \(apps.count) 个应用")
+            } catch {
                 guard let self else { return }
-                    self.installedApps = []
-                    self.appendLog("[应用列表] 读取失败：\(error.localizedDescription)")
+                self.installedApps = []
+                self.appendLog("[应用列表] 读取失败：\(error.localizedDescription)")
             }
         }
     }
@@ -406,17 +424,12 @@ final class ADBViewModel {
 
         let service = service
         let serial = selectedADBSerial
-        Task { [weak self, service, serial, keyEvent, label] in
-            let result = await Task.detached {
-                Result { try service.runShell("input keyevent \(keyEvent)", serial: serial) }
-            }.value
-
-            guard let self else { return }
-            switch result {
-            case .success:
-                self.appendLog("[投屏快捷] 已发送：\(label)")
-            case .failure(let error):
-                self.appendLog("[投屏快捷] \(label) 失败：\(error.localizedDescription)")
+        Task { [weak self] in
+            do {
+                _ = try await service.runShell("input keyevent \(keyEvent)", serial: serial)
+                self?.appendLog("[投屏快捷] 已发送：\(label)")
+            } catch {
+                self?.appendLog("[投屏快捷] \(label) 失败：\(error.localizedDescription)")
             }
         }
     }
@@ -432,47 +445,58 @@ final class ADBViewModel {
 
         let service = service
         let serial = selectedADBSerial
-        Task { [weak self, service, serial, remotePath] in
-            let result = await Task.detached {
-                Result { try service.runShell("screencap -p \(remotePath)", serial: serial) }
-            }.value
-
-            guard let self else { return }
-            switch result {
-            case .success:
-                self.appendLog("[投屏快捷] 已截图到设备：\(remotePath)")
-            case .failure(let error):
-                self.appendLog("[投屏快捷] 截图失败：\(error.localizedDescription)")
+        Task { [weak self] in
+            do {
+                _ = try await service.runShell("screencap -p \(remotePath)", serial: serial)
+                self?.appendLog("[投屏快捷] 已截图到设备：\(remotePath)")
+            } catch {
+                self?.appendLog("[投屏快捷] 截图失败：\(error.localizedDescription)")
             }
         }
     }
 
     func pullFile() {
         guard !pullRemotePath.isEmpty, !pullLocalPath.isEmpty else { return }
-        do {
-            let result = try service.pull(remotePath: pullRemotePath, localPath: pullLocalPath, serial: selectedADBSerial)
-            appendLog("[拉取] \(pullRemotePath) -> \(pullLocalPath)\n\(result)")
-        } catch {
-            appendLog("[拉取] 失败：\(error.localizedDescription)")
+        let service = service
+        let remote = pullRemotePath
+        let local = pullLocalPath
+        let serial = selectedADBSerial
+        Task { [weak self] in
+            do {
+                let result = try await service.pull(remotePath: remote, localPath: local, serial: serial)
+                self?.appendLog("[拉取] \(remote) -> \(local)\n\(result)")
+            } catch {
+                self?.appendLog("[拉取] 失败：\(error.localizedDescription)")
+            }
         }
     }
 
     func pushFile() {
         guard !pushLocalPath.isEmpty, !pushRemotePath.isEmpty else { return }
-        do {
-            let result = try service.push(localPath: pushLocalPath, remotePath: pushRemotePath, serial: selectedADBSerial)
-            appendLog("[推送] \(pushLocalPath) -> \(pushRemotePath)\n\(result)")
-        } catch {
-            appendLog("[推送] 失败：\(error.localizedDescription)")
+        let service = service
+        let local = pushLocalPath
+        let remote = pushRemotePath
+        let serial = selectedADBSerial
+        Task { [weak self] in
+            do {
+                let result = try await service.push(localPath: local, remotePath: remote, serial: serial)
+                self?.appendLog("[推送] \(local) -> \(remote)\n\(result)")
+            } catch {
+                self?.appendLog("[推送] 失败：\(error.localizedDescription)")
+            }
         }
     }
 
     func reboot(to target: ADBRebootTarget, label: String) {
-        do {
-            let result = try service.reboot(target, serial: selectedADBSerial)
-            appendLog("[重启] \(label)\n\(result)")
-        } catch {
-            appendLog("[重启] \(label) 失败：\(error.localizedDescription)")
+        let service = service
+        let serial = selectedADBSerial
+        Task { [weak self] in
+            do {
+                let result = try await service.reboot(target, serial: serial)
+                self?.appendLog("[重启] \(label)\n\(result)")
+            } catch {
+                self?.appendLog("[重启] \(label) 失败：\(error.localizedDescription)")
+            }
         }
     }
 
@@ -481,16 +505,11 @@ final class ADBViewModel {
         isRefreshingDevices = true
 
         let service = service
-        Task { [weak self, service, showLog] in
-            let result = await Task.detached {
-                Result { try service.listDevices() }
-            }.value
-
-            guard let self else { return }
-            self.isRefreshingDevices = false
-
-            switch result {
-            case .success(let list):
+        Task { [weak self] in
+            do {
+                let list = try await service.listDevices()
+                guard let self else { return }
+                self.isRefreshingDevices = false
                 self.devices = list.devices
                 if let matched = list.devices.first(where: { $0.serial == self.selectedDevice.serial }) {
                     self.selectedDevice = matched
@@ -500,7 +519,9 @@ final class ADBViewModel {
                 if showLog {
                     self.appendLog("[设备] 刷新完成：共 \(list.devices.count) 台")
                 }
-            case .failure(let error):
+            } catch {
+                guard let self else { return }
+                self.isRefreshingDevices = false
                 if showLog {
                     self.appendLog("[设备] 刷新失败：\(error.localizedDescription)")
                 }

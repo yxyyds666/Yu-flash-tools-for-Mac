@@ -37,31 +37,31 @@ final class FastbootService: Sendable {
         self.resolveExecutable = resolveExecutable
     }
 
-    func listDevices(serial: String? = nil) throws -> [DeviceInfo] {
-        let output = try run(arguments: ["devices"], serial: serial)
+    func listDevices(serial: String? = nil) async throws -> [DeviceInfo] {
+        let output = try await run(arguments: ["devices"], serial: serial)
         return FastbootParser.parseDevices(from: output)
     }
 
-    func getVar(_ key: String, serial: String? = nil) throws -> String {
-        try run(arguments: ["getvar", key], serial: serial)
+    func getVar(_ key: String, serial: String? = nil) async throws -> String {
+        try await run(arguments: ["getvar", key], serial: serial)
     }
 
-    func flash(partition: String, image: URL, serial: String? = nil) throws -> String {
-        try run(arguments: ["flash", partition, image.path], serial: serial, timeout: 300)
+    func flash(partition: String, image: URL, serial: String? = nil) async throws -> String {
+        try await run(arguments: ["flash", partition, image.path], serial: serial, timeout: 300)
     }
 
-    func reboot(_ target: FastbootRebootTarget, serial: String? = nil) throws -> String {
+    func reboot(_ target: FastbootRebootTarget, serial: String? = nil) async throws -> String {
         switch target {
         case .system:
-            return try run(arguments: ["reboot"], serial: serial)
+            return try await run(arguments: ["reboot"], serial: serial)
         case .bootloader:
-            return try run(arguments: ["reboot-bootloader"], serial: serial)
+            return try await run(arguments: ["reboot-bootloader"], serial: serial)
         case .fastbootd, .recovery:
-            return try run(arguments: ["reboot", target.rawValue], serial: serial)
+            return try await run(arguments: ["reboot", target.rawValue], serial: serial)
         }
     }
 
-    private func run(arguments: [String], serial: String? = nil, timeout: TimeInterval = 20) throws -> String {
+    private func run(arguments: [String], serial: String? = nil, timeout: TimeInterval = 20) async throws -> String {
         guard let executable = resolveExecutable() else {
             throw FastbootServiceError.executableMissing
         }
@@ -73,7 +73,7 @@ final class FastbootService: Sendable {
             effectiveArgs = arguments
         }
 
-        let result = try runner.run(executable: executable, arguments: effectiveArgs, timeout: timeout)
+        let result = try await runner.run(executable: executable, arguments: effectiveArgs, timeout: timeout)
         guard result.exitCode == 0 else {
             throw FastbootServiceError.commandFailed(result.output)
         }

@@ -18,19 +18,27 @@ final class EDLViewModel {
     }
 
     func refreshDevices() {
-        let list = service.probe()
-        devices = list
-        selectedDevice = list.first ?? .disconnected
-        appendLog("[edl probe] refreshed: \(list.count) device(s)")
+        let service = service
+        Task { [weak self] in
+            let list = await service.probe()
+            guard let self else { return }
+            self.devices = list
+            self.selectedDevice = list.first ?? .disconnected
+            self.appendLog("[edl probe] refreshed: \(list.count) device(s)")
+        }
     }
 
     func runRawCommand() {
-        guard !rawCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        do {
-            let output = try service.runRawCommand(rawCommand)
-            appendLog("[edl] \(rawCommand)\n\(output)")
-        } catch {
-            appendLog("[edl] error: \(error.localizedDescription)")
+        let command = rawCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !command.isEmpty else { return }
+        let service = service
+        Task { [weak self] in
+            do {
+                let output = try await service.runRawCommand(command)
+                self?.appendLog("[edl] \(command)\n\(output)")
+            } catch {
+                self?.appendLog("[edl] error: \(error.localizedDescription)")
+            }
         }
     }
 
