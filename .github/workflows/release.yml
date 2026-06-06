@@ -139,22 +139,18 @@ jobs:
       - name: Generate release notes
         if: steps.check.outputs.exists == 'false'
         id: notes
+        env:
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n1)
           {
             echo "notes<<NOTES_EOF"
             echo "## 羽工具箱 v${{ steps.version.outputs.version }}"
-            echo ""
-            if [ -n "$PREV_TAG" ]; then
-              echo "### Changes since $PREV_TAG"
-              git log --pretty=format:'- %s (%h)' "$PREV_TAG"..HEAD
-            else
-              echo "### Changes"
-              git log --pretty=format:'- %s (%h)' -n 20
-            fi
-            echo ""
-            echo ""
-            echo "Built from \`${{ github.sha }}\`."
+            echo
+            scripts/changelog.sh "$PREV_TAG" HEAD
+            echo
+            echo "构建自 \`${{ github.sha }}\`。"
             echo "NOTES_EOF"
           } >> "$GITHUB_OUTPUT"
 
